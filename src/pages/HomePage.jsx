@@ -1,23 +1,21 @@
 import { useState, useEffect } from 'react'
-import { HiCamera, HiStar, HiUser, HiLogout } from 'react-icons/hi'
+import { HiCamera, HiStar, HiUser } from 'react-icons/hi'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import useLocalStorage from '../hooks/useLocalStorage'
+import useCloudData from '../hooks/useCloudData'
 import useAuth from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { calculateLevel } from '../lib/levels'
 import { getCatDexEntries } from '../data/catdex'
 import DailyMission from '../components/missions/DailyMission'
 import LeaderboardView from '../components/leaderboard/LeaderboardView'
-import LoginPage from './LoginPage'
 import toast from 'react-hot-toast'
 
 function HomePage() {
   const navigate = useNavigate()
-  const { data, addBadge, setData } = useLocalStorage()
+  const { cats, badges, completedMissions, xp, addBadge, markMissionComplete } = useCloudData()
   const { user, signOut } = useAuth()
   const [showLeaderboard, setShowLeaderboard] = useState(false)
-  const [showLogin, setShowLogin] = useState(false)
   const [cloudCats, setCloudCats] = useState(null)
   const [leaderboard, setLeaderboard] = useState(null)
 
@@ -61,11 +59,8 @@ function HomePage() {
       .catch(() => setLeaderboard([]))
   }, [user])
 
-  const cats = data.cats || []
-  const earnedBadges = data.badges || []
-  const completedMissions = data.completedMissions || []
-  const xp = data.xp || 0
-  const totalCats = data.totalCats || cats.length
+  const earnedBadges = badges
+  const totalCats = cats.length
   const { level, xpInLevel, xpForNext, progress } = calculateLevel(xp)
   const catdexEntries = getCatDexEntries(cats)
   const catdexProgress = catdexEntries.filter(e => e.found).length
@@ -76,20 +71,13 @@ function HomePage() {
     toast.success('Berhasil keluar')
   }
 
-  function handleMissionComplete(mission) {
-    const today = new Date().toDateString()
-    setData(prev => {
-      const next = {
-        ...prev,
-        xp: (prev.xp || 0) + mission.reward,
-        completedMissions: [
-          ...(prev.completedMissions || []),
-          { id: mission.id, date: today },
-        ],
-      }
-      try { localStorage.setItem('pocat_data', JSON.stringify(next)) } catch {}
-      return next
-    })
+  async function handleMissionComplete(mission) {
+    try {
+      await markMissionComplete(mission)
+      toast.success(`Misi selesai! +${mission.reward}XP 🎉`)
+    } catch (err) {
+      toast.error('Gagal menyelesaikan misi')
+    }
   }
 
   return (
@@ -104,17 +92,13 @@ function HomePage() {
             </h1>
           </div>
           <button
-            onClick={() => user ? navigate('/profile') : setShowLogin(true)}
+            onClick={() => navigate('/profile')}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-surface hover:bg-hairline transition-colors"
-            title={user ? `Profil (${user.email})` : 'Login'}
+            title="Profil"
           >
-            {user ? (
-              <span className="w-7 h-7 rounded-full bg-primary text-on-dark flex items-center justify-center text-xs font-bold">
-                {user.email[0].toUpperCase()}
-              </span>
-            ) : (
-              <HiUser size={20} className="text-slate" />
-            )}
+            <span className="w-7 h-7 rounded-full bg-primary text-on-dark flex items-center justify-center text-xs font-bold">
+              {user?.email?.[0].toUpperCase() || '?'}
+            </span>
           </button>
         </div>
 
@@ -200,13 +184,6 @@ function HomePage() {
           </p>
         )}
 
-        {/* Guest mode hint */}
-        {!user && (
-          <p className="text-[11px] text-steel text-center pb-2">
-            Mode tamu · Data tersimpan di perangkat ini
-          </p>
-        )}
-
         {/* Recent cats mini preview */}
         {cats.length > 0 && (
           <div className="w-full pb-6">
@@ -233,11 +210,6 @@ function HomePage() {
             cloudCats={cloudCats}
             entries={leaderboard}
             onClose={() => setShowLeaderboard(false)}
-          />
-        )}
-        {showLogin && (
-          <LoginPage
-            onClose={() => setShowLogin(false)}
           />
         )}
       </AnimatePresence>

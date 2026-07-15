@@ -1,9 +1,9 @@
-import useLocalStorage from '../hooks/useLocalStorage'
+import useCloudData from '../hooks/useCloudData'
 import BadgeList from '../components/badges/BadgeList'
 
 function BadgesPage() {
-  const { data } = useLocalStorage()
-  return <BadgeList earnedBadges={data.badges || []} />
+  const { badges } = useCloudData()
+  return <BadgeList earnedBadges={badges} />
 }
 
 export default BadgesPage

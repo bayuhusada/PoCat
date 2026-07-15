@@ -6,10 +6,7 @@ import {
   HiCheck, HiTrash, HiX
 } from 'react-icons/hi'
 import toast from 'react-hot-toast'
-import useLocalStorage from '../../hooks/useLocalStorage'
-import useAuth from '../../hooks/useAuth'
-import { updateCatInCloud, deleteCatFromCloud } from '../../lib/cloud'
-import { checkBadges } from '../../lib/levels'
+import useCloudData from '../../hooks/useCloudData'
 import FramePicker from '../camera/FramePicker'
 import catdex from '../../data/catdex'
 
@@ -47,8 +44,7 @@ const frameOverlays = {
 }
 
 function DetailView({ cat, onClose, onShare }) {
-  const { updateCat, deleteCat, addBadge } = useLocalStorage()
-  const { user } = useAuth()
+  const { updateCat, deleteCat } = useCloudData()
 
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
@@ -92,8 +88,10 @@ function DetailView({ cat, onClose, onShare }) {
     hour: '2-digit', minute: '2-digit',
   })
 
-  function toggleFavorite() {
-    updateCat(cat.id, { favorite: !cat.favorite })
+  async function toggleFavorite() {
+    try {
+      await updateCat(cat.id, { favorite: !cat.favorite })
+    } catch {}
   }
 
   function handleStartEdit() {
@@ -121,40 +119,23 @@ function DetailView({ cat, onClose, onShare }) {
       frame: editFrame,
       color: editColor || null,
       species: editSpecies ? Number(editSpecies) : null,
+    }).then(() => {
+      setEditing(false)
+      toast.success('Kucing berhasil diperbarui')
+    }).catch(err => {
+      toast.error('Gagal memperbarui: ' + (err.message || 'Gagal'))
     })
-
-    if (user) {
-      updateCatInCloud(cat.id, {
-        name: trimmed,
-        story: editStory.trim(),
-        frame: editFrame,
-        color: editColor || null,
-        species: editSpecies ? Number(editSpecies) : null,
-      }).catch(err => console.error('Cloud update failed:', err))
-    }
-
-    const allCats = JSON.parse(localStorage.getItem('pocat_data') || '{}').cats || []
-    const currentBadges = JSON.parse(localStorage.getItem('pocat_data') || '{}').badges || []
-    const newBadges = checkBadges(allCats, currentBadges)
-    newBadges.forEach(id => addBadge(id))
-
-    setEditing(false)
-    toast.success('Kucing berhasil diperbarui')
   }
 
   async function handleDelete() {
-    if (user) {
-      try {
-        await deleteCatFromCloud(cat.id, user.id)
-      } catch (err) {
-        toast.error('Gagal menghapus dari cloud: ' + (err.message || 'Gagal'))
-        return
-      }
+    try {
+      await deleteCat(cat.id)
+      setShowDeleteConfirm(false)
+      onClose()
+      toast.success('Kucing berhasil dihapus')
+    } catch (err) {
+      toast.error('Gagal menghapus: ' + (err.message || 'Gagal'))
     }
-    deleteCat(cat.id)
-    setShowDeleteConfirm(false)
-    onClose()
-    toast.success('Kucing berhasil dihapus')
   }
 
   function handleFrameSelect(frameId) {

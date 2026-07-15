@@ -26,7 +26,7 @@ export default function useAuth() {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -35,13 +35,28 @@ export default function useAuth() {
           const stored = localStorage.getItem('pocat_data')
           if (stored) {
             try {
-              const { cats } = JSON.parse(stored)
-              if (cats?.length > 0) {
-                migrateLocalToCloud(session.user.id, cats).then(count => {
-                  if (count > 0) console.log(`Migrated ${count} cats to cloud`)
-                })
+              const parsed = JSON.parse(stored)
+              const { cats: localCats, badges: localBadges, completedMissions: localMissions } = parsed
+              if (localCats?.length > 0) {
+                await migrateLocalToCloud(session.user.id, localCats)
               }
-            } catch {}
+              if (localBadges?.length > 0) {
+                for (const badgeId of localBadges) {
+                  await supabase
+                    .from('user_badges')
+                    .upsert({ user_id: session.user.id, badge_id: badgeId }, { onConflict: 'user_id,badge_id' })
+                }
+              }
+              if (localMissions?.length > 0) {
+                for (const m of localMissions) {
+                  await supabase
+                    .from('user_missions')
+                    .upsert({ user_id: session.user.id, mission_id: m.id, completed_date: m.date }, { onConflict: 'user_id,mission_id,completed_date' })
+                }
+              }
+            } catch (err) {
+              console.error('Migration failed:', err)
+            }
           }
         }
       }

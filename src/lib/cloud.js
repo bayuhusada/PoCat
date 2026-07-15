@@ -117,3 +117,35 @@ export async function migrateLocalToCloud(userId, localCats) {
   }
   return count
 }
+
+export async function fetchUserBadges(userId) {
+  const { data, error } = await supabase
+    .from('user_badges')
+    .select('badge_id')
+    .eq('user_id', userId)
+  if (error) throw error
+  return (data || []).map(r => r.badge_id)
+}
+
+export async function unlockBadge(userId, badgeId) {
+  const { error } = await supabase
+    .from('user_badges')
+    .insert({ user_id: userId, badge_id: badgeId })
+  if (error) throw error
+}
+
+export async function fetchUserMissions(userId) {
+  const { data, error } = await supabase
+    .from('user_missions')
+    .select('mission_id, completed_date')
+    .eq('user_id', userId)
+  if (error) throw error
+  return data || []
+}
+
+export async function completeMission(userId, missionId, date) {
+  const { error } = await supabase
+    .from('user_missions')
+    .insert({ user_id: userId, mission_id: missionId, completed_date: date })
+  if (error) throw error
+}

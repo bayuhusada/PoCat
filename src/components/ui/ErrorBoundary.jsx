@@ -19,19 +19,13 @@ export default class ErrorBoundary extends Component {
           </div>
           <h2 className="text-lg font-bold text-primary text-center">Ada yang error</h2>
           <p className="text-sm text-slate text-center max-w-xs">
-            Coba reload halaman atau hapus data localStorage jika masalah berlanjut.
+            Coba reload halaman.
           </p>
           <button
-            onClick={() => { localStorage.removeItem('pocat_data'); window.location.reload() }}
+            onClick={() => window.location.reload()}
             className="bg-primary text-on-dark rounded-full px-6 py-2.5 text-sm font-medium"
           >
-            Reset & Reload
-          </button>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-sm text-slate underline"
-          >
-            Reload aja
+            Reload
           </button>
         </div>
       )
@@ -39,3 +33,4 @@ export default class ErrorBoundary extends Component {
     return this.props.children
   }
 }
+

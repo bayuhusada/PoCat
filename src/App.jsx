@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { HiExclamation } from 'react-icons/hi'
+import useAuth from './hooks/useAuth'
 import ErrorBoundary from './components/ui/ErrorBoundary'
 import BottomNav from './components/layout/BottomNav'
 import FAB from './components/layout/FAB'
 import ViewStack from './components/layout/ViewStack'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
+import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import GalleryPage from './pages/GalleryPage'
 import CatDexPage from './pages/CatDexPage'
@@ -32,6 +34,7 @@ function NotFound() {
 }
 
 function App() {
+  const { user, loading } = useAuth()
   const [onboardingDone, setOnboardingDone] = useState(() => {
     return localStorage.getItem('pocat_onboarding') === 'done'
   })
@@ -57,6 +60,18 @@ function App() {
 
   if (!onboardingDone) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-canvas">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LoginPage />
   }
 
   return (

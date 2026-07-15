@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { HiArrowLeft, HiMail, HiLockClosed, HiEye, HiEyeOff, HiUser } from 'react-icons/hi'
+import { HiMail, HiLockClosed, HiEye, HiEyeOff, HiUser } from 'react-icons/hi'
 import useAuth from '../hooks/useAuth'
 import toast from 'react-hot-toast'
 
-function LoginPage({ onClose, onLoginSuccess }) {
+function LoginPage() {
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -23,8 +23,6 @@ function LoginPage({ onClose, onLoginSuccess }) {
       if (mode === 'login') {
         await signIn(email, password)
         toast.success('Berhasil masuk!')
-        onLoginSuccess?.()
-        onClose()
       } else {
         await signUp(email, password, username.trim() || undefined)
         toast.success('Akun berhasil dibuat! Silakan cek email untuk verifikasi.')
@@ -38,25 +36,7 @@ function LoginPage({ onClose, onLoginSuccess }) {
   }
 
   return (
-    <motion.div
-      initial={{ y: '100%' }}
-      animate={{ y: 0 }}
-      exit={{ y: '100%' }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed inset-0 z-50 bg-canvas flex flex-col safe-top safe-bottom"
-    >
-      {/* Top bar */}
-      <div className="flex items-center px-4" style={{ height: 56 }}>
-        <button
-          onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-surface transition-colors"
-        >
-          <HiArrowLeft size={24} />
-        </button>
-        <span className="flex-1 text-center text-sm font-semibold text-primary">Akun</span>
-        <div className="w-10" />
-      </div>
-
+    <div className="h-full bg-canvas flex flex-col safe-top safe-bottom">
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-sm">
@@ -70,8 +50,8 @@ function LoginPage({ onClose, onLoginSuccess }) {
             </h1>
             <p className="text-slate text-sm mt-1">
               {mode === 'login'
-                ? 'Masuk untuk menyimpan koleksi ke cloud'
-                : 'Buat akun baru untuk menyimpan koleksi'
+                ? 'Masuk untuk mulai hunting kucing!'
+                : 'Buat akun baru untuk mulai koleksi'
               }
             </p>
           </div>
@@ -167,17 +147,9 @@ function LoginPage({ onClose, onLoginSuccess }) {
               {mode === 'login' ? 'Daftar' : 'Masuk'}
             </button>
           </div>
-
-          {mode === 'login' && (
-            <div className="mt-4 text-center">
-              <span className="text-[11px] text-steel">
-                Atau lanjut sebagai tamu — data tersimpan di perangkat ini
-              </span>
-            </div>
-          )}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 

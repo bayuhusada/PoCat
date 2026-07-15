@@ -1,12 +1,14 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { HiCamera } from 'react-icons/hi'
+import useAuth from '../../hooks/useAuth'
 
 function FAB() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
   const isCameraPage = location.pathname === '/camera'
 
-  if (isCameraPage) return null
+  if (isCameraPage || !user) return null
 
   return (
     <div className="flex justify-center" style={{ marginBottom: -28, position: 'relative', zIndex: 10 }}>

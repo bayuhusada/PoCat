@@ -4,10 +4,7 @@ import toast from 'react-hot-toast'
 import useCamera from '../hooks/useCamera'
 import useCatDetection from '../hooks/useCatDetection'
 import useGeolocation from '../hooks/useGeolocation'
-import useLocalStorage from '../hooks/useLocalStorage'
-import useAuth from '../hooks/useAuth'
-import { checkBadges } from '../lib/levels'
-import { uploadPhoto, saveCatToCloud } from '../lib/cloud'
+import useCloudData from '../hooks/useCloudData'
 import CameraView from '../components/camera/CameraView'
 import AIDetection from '../components/camera/AIDetection'
 import FramePicker from '../components/camera/FramePicker'
@@ -18,8 +15,7 @@ function CameraPage() {
   const camera = useCamera()
   const ai = useCatDetection()
   const geo = useGeolocation()
-  const storage = useLocalStorage()
-  const { user } = useAuth()
+  const { addCat } = useCloudData()
 
   const lastGeocodeRef = useRef(0)
   const [showFramePicker, setShowFramePicker] = useState(false)
@@ -73,45 +69,28 @@ function CameraPage() {
       } catch {}
     }
 
-    const newCat = storage.addCat({
-      name,
-      story,
-      photo: camera.capturedImage,
-      frame: selectedFrame,
-      latitude: geo.location?.latitude || null,
-      longitude: geo.location?.longitude || null,
-      location_name,
-      color,
-      species,
-    })
+    try {
+      await addCat({
+        name,
+        story,
+        photo: camera.capturedImage,
+        frame: selectedFrame,
+        latitude: geo.location?.latitude || null,
+        longitude: geo.location?.longitude || null,
+        location_name,
+        color,
+        species,
+      })
 
-    // Sync to cloud if logged in
-    if (user) {
-      try {
-        const photoUrl = await uploadPhoto(user.id, newCat.id, camera.capturedImage)
-        await saveCatToCloud({
-          ...newCat,
-          photo: photoUrl,
-          user_id: user.id,
-        })
-      } catch (err) {
-        console.error('Cloud sync failed:', err)
-      }
+      setShowNaming(false)
+      toast.success(`${name} saved! +20XP 🐱`, { icon: '🎉' })
+      setTimeout(() => navigate('/gallery'), 500)
+    } catch (err) {
+      toast.error('Gagal menyimpan: ' + (err.message || 'Gagal'))
+    } finally {
+      setSaving(false)
     }
-
-    // Check badges
-    const cats = storage.getCats()
-    const newBadges = checkBadges(cats, storage.data.badges || [])
-    newBadges.forEach(id => storage.addBadge(id))
-
-    setSaving(false)
-    toast.success(`${name} saved! +20XP 🐱`, {
-      icon: '🎉',
-    })
-
-    setShowNaming(false)
-    setTimeout(() => navigate('/gallery'), 500)
-  }, [camera.capturedImage, selectedFrame, geo.location, storage, navigate, user])
+  }, [camera.capturedImage, selectedFrame, geo.location, addCat, navigate])
 
   const handleClose = useCallback(() => {
     if (camera.capturedImage) {
