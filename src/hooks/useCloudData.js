@@ -64,7 +64,9 @@ export default function useCloudData() {
       try {
         await unlockBadge(user.id, id)
         setBadges(prev => prev.includes(id) ? prev : [...prev, id])
-      } catch {}
+      } catch (err) {
+        console.error('Failed to unlock badge:', id, err)
+      }
     }
     return { cat: newCat, newBadges: unlockedBadges }
   }, [user])
@@ -80,7 +82,9 @@ export default function useCloudData() {
       try {
         await unlockBadge(user.id, id)
         setBadges(prev => prev.includes(id) ? prev : [...prev, id])
-      } catch {}
+      } catch (err) {
+        console.error('Failed to unlock badge:', id, err)
+      }
     }
     return { newBadges: unlockedBadges }
   }, [user])

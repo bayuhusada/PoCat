@@ -76,11 +76,13 @@ export async function updateCatInCloud(catId, updates) {
 }
 
 export async function deleteCatFromCloud(catId, userId) {
-  const { error: dbError } = await supabase
+  const { data, error: dbError } = await supabase
     .from('cats')
     .delete()
     .eq('id', catId)
+    .select()
   if (dbError) throw dbError
+  if (!data || data.length === 0) throw new Error('Catatan tidak ditemukan atau sudah dihapus')
 
   const filePath = `${userId}/${catId}.jpg`
   const { error: storageError } = await supabase.storage
