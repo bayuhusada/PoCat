@@ -1,18 +1,36 @@
-import { useState } from 'react'
-import { HiCamera, HiStar } from 'react-icons/hi'
+import { useState, useEffect } from 'react'
+import { HiCamera, HiStar, HiUser, HiLogout } from 'react-icons/hi'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import useLocalStorage from '../hooks/useLocalStorage'
+import useAuth from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 import { calculateLevel } from '../lib/levels'
 import { getCatDexEntries } from '../data/catdex'
 import DailyMission from '../components/missions/DailyMission'
 import LeaderboardView from '../components/leaderboard/LeaderboardView'
+import LoginPage from './LoginPage'
 import toast from 'react-hot-toast'
 
 function HomePage() {
   const navigate = useNavigate()
-  const { data, addBadge, addCat } = useLocalStorage()
+  const { data, addBadge } = useLocalStorage()
+  const { user, signOut } = useAuth()
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
+  const [cloudCats, setCloudCats] = useState(null)
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('cats')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .then(({ count }) => setCloudCats(count || 0))
+    } else {
+      setCloudCats(null)
+    }
+  }, [user])
 
   const cats = data.cats || []
   const earnedBadges = data.badges || []
@@ -23,6 +41,12 @@ function HomePage() {
   const catdexEntries = getCatDexEntries(cats)
   const catdexProgress = catdexEntries.filter(e => e.found).length
   const badgeCount = earnedBadges.length
+
+  async function handleLogout() {
+    await signOut()
+    toast.success('Berhasil keluar')
+    window.location.reload()
+  }
 
   function handleMissionComplete(mission) {
     const today = new Date().toDateString()
@@ -40,16 +64,40 @@ function HomePage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="flex flex-col items-center px-6 pt-8 gap-5">
-        {/* Hero */}
-        <div className="flex flex-col items-center gap-1">
-          <h1 className="text-[36px] font-bold tracking-tight leading-tight text-primary">
-            PokeCat
-          </h1>
-          <p className="text-slate text-sm text-center max-w-[260px]">
-            Temukan, potret, dan koleksi kucing di sekitarmu!
-          </p>
+      <div className="flex flex-col items-center px-6 pt-6 gap-5">
+        {/* Header with avatar */}
+        <div className="w-full flex items-center justify-between">
+          <div />
+          <div className="flex flex-col items-center gap-1">
+            <h1 className="text-[32px] font-bold tracking-tight leading-tight text-primary">
+              PokeCat
+            </h1>
+          </div>
+          <button
+            onClick={() => user ? handleLogout() : setShowLogin(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-surface hover:bg-hairline transition-colors"
+            title={user ? `Logout (${user.email})` : 'Login'}
+          >
+            {user ? (
+              <span className="w-7 h-7 rounded-full bg-primary text-on-dark flex items-center justify-center text-xs font-bold">
+                {user.email[0].toUpperCase()}
+              </span>
+            ) : (
+              <HiUser size={20} className="text-slate" />
+            )}
+          </button>
         </div>
+
+        {/* Auth status */}
+        {user && (
+          <div className="flex items-center gap-2 text-xs text-slate -mt-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+            {user.email}
+            {cloudCats !== null && (
+              <span>· {cloudCats} kucing di cloud</span>
+            )}
+          </div>
+        )}
 
         {/* Level Card */}
         <div className="w-full bg-primary rounded-3xl p-5 shadow-card">
@@ -107,20 +155,25 @@ function HomePage() {
           Mulai Hunting!
         </button>
 
-        {totalCats > 0 && (
-          <button
-            onClick={() => setShowLeaderboard(true)}
-            className="flex items-center gap-2 text-slate border border-hairline rounded-full px-6 py-2.5 text-sm font-medium active:scale-95 transition-transform w-full justify-center hover:border-hairline-strong"
-          >
-            <HiStar size={18} />
-            Lihat Peringkat
-          </button>
-        )}
+        <button
+          onClick={() => setShowLeaderboard(true)}
+          className="flex items-center gap-2 text-slate border border-hairline rounded-full px-6 py-2.5 text-sm font-medium active:scale-95 transition-transform w-full justify-center hover:border-hairline-strong"
+        >
+          <HiStar size={18} />
+          Lihat Peringkat
+        </button>
 
         {/* Empty state hint */}
         {totalCats === 0 && (
           <p className="text-[11px] text-steel font-medium uppercase tracking-wider text-center pb-4">
             Belum ada kucing yang dikoleksi
+          </p>
+        )}
+
+        {/* Guest mode hint */}
+        {!user && (
+          <p className="text-[11px] text-steel text-center pb-2">
+            Mode tamu · Data tersimpan di perangkat ini
           </p>
         )}
 
@@ -143,12 +196,17 @@ function HomePage() {
         )}
       </div>
 
-      {/* Leaderboard overlay */}
       <AnimatePresence>
         {showLeaderboard && (
           <LeaderboardView
             userCats={totalCats}
+            cloudCats={cloudCats}
             onClose={() => setShowLeaderboard(false)}
+          />
+        )}
+        {showLogin && (
+          <LoginPage
+            onClose={() => setShowLogin(false)}
           />
         )}
       </AnimatePresence>

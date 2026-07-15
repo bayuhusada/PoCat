@@ -1,21 +1,13 @@
 import { motion } from 'framer-motion'
-import { HiArrowLeft, HiStar } from 'react-icons/hi'
+import { HiArrowLeft, HiStar, HiUser } from 'react-icons/hi'
 import { getLeaderboard } from '../../data/leaderboard'
+import useAuth from '../../hooks/useAuth'
 
-const rankStyles = {
-  1: 'text-[#FFD700]',
-  2: 'text-[#C0C0C0]',
-  3: 'text-[#CD7F32]',
-}
-
-const rankBg = {
-  1: 'bg-[#FFF8E0] border-[#FFD700]',
-  2: 'bg-[#F0F0F5] border-[#C0C0C0]',
-  3: 'bg-[#FFF0E8] border-[#CD7F32]',
-}
-
-function LeaderboardView({ userCats, onClose }) {
-  const entries = getLeaderboard(userCats)
+function LeaderboardView({ userCats, cloudCats, onClose }) {
+  const { user } = useAuth()
+  const displayCats = cloudCats !== null ? Math.max(userCats, cloudCats) : userCats
+  const entries = getLeaderboard(displayCats)
+  const isLoggedIn = !!user
 
   return (
     <motion.div
@@ -37,72 +29,40 @@ function LeaderboardView({ userCats, onClose }) {
         <div className="w-10" />
       </div>
 
-      {/* Hero */}
-      <div className="px-5 pb-4">
-        <div className="bg-primary rounded-3xl p-6 text-center">
-          <HiStar size={36} className="text-brand-yellow mx-auto mb-2" />
-          <h2 className="text-xl font-bold text-on-dark">Peringkat</h2>
-          <p className="text-on-dark-muted text-sm mt-1">
-            Semakin banyak kucing, semakin tinggi peringkatmu!
-          </p>
-        </div>
-      </div>
-
-      {/* List */}
-      <div className="flex-1 overflow-y-auto px-5 pb-4">
-        <div className="space-y-2">
-          {entries.map((entry) => (
-            <div
-              key={entry.name}
-              className={`
-                flex items-center gap-3 rounded-2xl px-4 py-3 border
-                transition-all
-                ${entry.isUser
-                  ? 'bg-primary border-primary text-on-dark'
-                  : entry.rank <= 3
-                    ? `${rankBg[entry.rank]} border`
-                    : 'bg-canvas border-hairline-soft'
-                }
-              `}
-            >
-              {/* Rank */}
-              <div className={`
-                w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
-                ${entry.isUser
-                  ? 'bg-brand-yellow text-primary'
-                  : entry.rank <= 3
-                    ? `${rankStyles[entry.rank]} bg-canvas`
-                    : 'bg-surface text-slate'
-                }
-              `}>
-                {entry.rank}
-              </div>
-
-              {/* Avatar */}
-              <div className={`
-                w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
-                ${entry.isUser ? 'bg-brand-yellow text-primary' : 'bg-surface text-slate'}
-              `}>
-                {entry.name[0]}
-              </div>
-
-              {/* Name */}
-              <div className="flex-1 min-w-0">
-                <span className={`text-sm font-semibold ${entry.isUser ? 'text-on-dark' : 'text-primary'}`}>
-                  {entry.name}
-                </span>
-                {entry.isUser && (
-                  <span className="text-[10px] text-on-dark-muted ml-2 font-medium">(Kamu)</span>
-                )}
-              </div>
-
-              {/* Cats count */}
-              <span className={`text-sm font-bold ${entry.isUser ? 'text-on-dark' : 'text-primary'}`}>
-                {entry.totalCats}
-              </span>
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        {isLoggedIn ? (
+          <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+            <div className="w-16 h-16 rounded-3xl bg-brand-yellow flex items-center justify-center">
+              <HiStar size={32} className="text-primary" />
             </div>
-          ))}
-        </div>
+            <h2 className="text-xl font-bold text-primary">Peringkatmu</h2>
+
+            {/* User card */}
+            <div className="w-full bg-primary rounded-3xl p-5 shadow-card text-center">
+              <div className="w-14 h-14 rounded-full bg-brand-yellow text-primary flex items-center justify-center text-xl font-bold mx-auto mb-3">
+                {user.email[0].toUpperCase()}
+              </div>
+              <p className="text-on-dark font-semibold text-base">{user.email}</p>
+              <p className="text-3xl font-bold text-brand-yellow mt-2">{displayCats}</p>
+              <p className="text-on-dark-muted text-sm mt-1">kucing dikoleksi</p>
+            </div>
+
+            <p className="text-slate text-sm text-center">
+              Leaderboard global akan muncul saat ada lebih banyak pemain!
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+            <div className="w-16 h-16 rounded-3xl bg-surface flex items-center justify-center">
+              <HiUser size={32} className="text-slate" />
+            </div>
+            <h2 className="text-xl font-bold text-primary">Leaderboard</h2>
+            <p className="text-slate text-sm text-center">
+              Login untuk muncul di leaderboard dan lihat peringkatmu dibanding pemain lain!
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   )
