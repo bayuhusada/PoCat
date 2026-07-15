@@ -7,6 +7,8 @@ import {
 } from 'react-icons/hi'
 import toast from 'react-hot-toast'
 import useLocalStorage from '../../hooks/useLocalStorage'
+import useAuth from '../../hooks/useAuth'
+import { updateCatInCloud, deleteCatFromCloud } from '../../lib/cloud'
 import FramePicker from '../camera/FramePicker'
 import catdex from '../../data/catdex'
 
@@ -45,6 +47,7 @@ const frameOverlays = {
 
 function DetailView({ cat, onClose, onShare }) {
   const { updateCat, deleteCat } = useLocalStorage()
+  const { user } = useAuth()
 
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
@@ -118,12 +121,26 @@ function DetailView({ cat, onClose, onShare }) {
       color: editColor || null,
       species: editSpecies ? Number(editSpecies) : null,
     })
+
+    if (user) {
+      updateCatInCloud(cat.id, {
+        name: trimmed,
+        story: editStory.trim(),
+        frame: editFrame,
+        color: editColor || null,
+        species: editSpecies ? Number(editSpecies) : null,
+      }).catch(err => console.error('Cloud update failed:', err))
+    }
+
     setEditing(false)
     toast.success('Kucing berhasil diperbarui')
   }
 
   function handleDelete() {
     deleteCat(cat.id)
+    if (user) {
+      deleteCatFromCloud(cat.id, user.id).catch(err => console.error('Cloud delete failed:', err))
+    }
     setShowDeleteConfirm(false)
     onClose()
     toast.success('Kucing berhasil dihapus')

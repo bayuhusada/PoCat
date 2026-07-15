@@ -5,7 +5,9 @@ import useCamera from '../hooks/useCamera'
 import useCatDetection from '../hooks/useCatDetection'
 import useGeolocation from '../hooks/useGeolocation'
 import useLocalStorage from '../hooks/useLocalStorage'
+import useAuth from '../hooks/useAuth'
 import { checkBadges } from '../lib/levels'
+import { uploadPhoto, saveCatToCloud } from '../lib/cloud'
 import CameraView from '../components/camera/CameraView'
 import AIDetection from '../components/camera/AIDetection'
 import FramePicker from '../components/camera/FramePicker'
@@ -17,6 +19,7 @@ function CameraPage() {
   const ai = useCatDetection()
   const geo = useGeolocation()
   const storage = useLocalStorage()
+  const { user } = useAuth()
 
   const [showFramePicker, setShowFramePicker] = useState(false)
   const [showNaming, setShowNaming] = useState(false)
@@ -67,7 +70,7 @@ function CameraPage() {
       } catch {}
     }
 
-    storage.addCat({
+    const newCat = storage.addCat({
       name,
       story,
       photo: camera.capturedImage,
@@ -78,6 +81,20 @@ function CameraPage() {
       color,
       species,
     })
+
+    // Sync to cloud if logged in
+    if (user) {
+      try {
+        const photoUrl = await uploadPhoto(user.id, newCat.id, camera.capturedImage)
+        await saveCatToCloud({
+          ...newCat,
+          photo: photoUrl,
+          user_id: user.id,
+        })
+      } catch (err) {
+        console.error('Cloud sync failed:', err)
+      }
+    }
 
     // Check badges
     const cats = storage.getCats()
@@ -91,7 +108,7 @@ function CameraPage() {
 
     setShowNaming(false)
     setTimeout(() => navigate('/gallery'), 500)
-  }, [camera.capturedImage, selectedFrame, geo.location, storage, navigate])
+  }, [camera.capturedImage, selectedFrame, geo.location, storage, navigate, user])
 
   const handleClose = useCallback(() => {
     if (camera.capturedImage) {
