@@ -52,7 +52,7 @@ function CameraPage() {
     setShowNaming(true)
   }, [])
 
-  const handleSave = useCallback(async ({ name, story }) => {
+  const handleSave = useCallback(async ({ name, story, color, species }) => {
     setSaving(true)
 
     let location_name = ''
@@ -75,6 +75,8 @@ function CameraPage() {
       latitude: geo.location?.latitude || null,
       longitude: geo.location?.longitude || null,
       location_name,
+      color,
+      species,
     })
 
     // Check badges

@@ -29,10 +29,16 @@ export function checkBadges(cats = [], currentBadges = []) {
     if (totalCats >= 100 && !currentBadges.includes('hundred_cats')) unlocked.push('hundred_cats')
   }
 
-  const orangeCount = cats.filter(c => /orange|oyen|kuning|ginger/i.test(c.name)).length
+  const orangeCount = cats.filter(c => {
+    if (c.color) return c.color === 'orange'
+    return /orange|oyen|kuning|ginger/i.test(c.name)
+  }).length
   if (orangeCount >= 3 && !currentBadges.includes('orange_collector')) unlocked.push('orange_collector')
 
-  const blackCount = cats.filter(c => /black|hitam|item|blackie/i.test(c.name)).length
+  const blackCount = cats.filter(c => {
+    if (c.color) return c.color === 'black'
+    return /black|hitam|item|blackie/i.test(c.name)
+  }).length
   if (blackCount >= 3 && !currentBadges.includes('black_collector')) unlocked.push('black_collector')
 
   const locations = new Set(cats.filter(c => c.latitude).map(c => `${c.latitude.toFixed(2)},${c.longitude.toFixed(2)}`))

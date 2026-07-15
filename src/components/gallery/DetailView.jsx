@@ -8,6 +8,7 @@ import {
 import toast from 'react-hot-toast'
 import useLocalStorage from '../../hooks/useLocalStorage'
 import FramePicker from '../camera/FramePicker'
+import catdex from '../../data/catdex'
 
 const frameBadges = {
   classic: 'bg-primary',
@@ -49,6 +50,8 @@ function DetailView({ cat, onClose, onShare }) {
   const [editName, setEditName] = useState('')
   const [editStory, setEditStory] = useState('')
   const [editFrame, setEditFrame] = useState('')
+  const [editColor, setEditColor] = useState('')
+  const [editSpecies, setEditSpecies] = useState('')
   const [showFramePicker, setShowFramePicker] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [locationName, setLocationName] = useState(cat?.location_name || '')
@@ -57,6 +60,8 @@ function DetailView({ cat, onClose, onShare }) {
     setEditName(cat?.name || '')
     setEditStory(cat?.story || '')
     setEditFrame(cat?.frame || 'classic')
+    setEditColor(cat?.color || '')
+    setEditSpecies(cat?.species || '')
   }, [cat])
 
   useEffect(() => {
@@ -91,6 +96,8 @@ function DetailView({ cat, onClose, onShare }) {
     setEditName(cat.name)
     setEditStory(cat.story || '')
     setEditFrame(cat.frame || 'classic')
+    setEditColor(cat.color || '')
+    setEditSpecies(cat.species || '')
     setEditing(true)
   }
 
@@ -108,6 +115,8 @@ function DetailView({ cat, onClose, onShare }) {
       name: trimmed,
       story: editStory.trim(),
       frame: editFrame,
+      color: editColor || null,
+      species: editSpecies ? Number(editSpecies) : null,
     })
     setEditing(false)
     toast.success('Kucing berhasil diperbarui')
@@ -128,6 +137,35 @@ function DetailView({ cat, onClose, onShare }) {
   const mapsUrl = cat.latitude && cat.longitude
     ? `https://maps.google.com/?q=${cat.latitude},${cat.longitude}`
     : null
+
+  const colorStyles = {
+    orange: 'bg-orange-400',
+    white: 'bg-white border border-gray-200 text-primary',
+    black: 'bg-gray-900',
+    grey: 'bg-gray-400',
+    brown: 'bg-amber-800',
+    mixed: 'bg-gradient-to-br from-orange-400 via-gray-900 to-white',
+  }
+
+  const colorLabels = {
+    orange: 'Orange',
+    white: 'White',
+    black: 'Black',
+    grey: 'Grey',
+    brown: 'Brown',
+    mixed: 'Mixed',
+  }
+
+  const editColors = [
+    { id: 'orange', label: 'Orange', dot: 'bg-orange-400' },
+    { id: 'white', label: 'White', dot: 'bg-white border border-gray-200' },
+    { id: 'black', label: 'Black', dot: 'bg-gray-900' },
+    { id: 'grey', label: 'Grey', dot: 'bg-gray-400' },
+    { id: 'brown', label: 'Brown', dot: 'bg-amber-800' },
+    { id: 'mixed', label: 'Mixed', dot: 'bg-gradient-to-br from-orange-400 via-gray-900 to-white' },
+  ]
+
+  const speciesName = cat.species ? (catdex.find(e => e.id === cat.species)?.name || null) : null
 
   return (
     <motion.div
@@ -193,19 +231,61 @@ function DetailView({ cat, onClose, onShare }) {
         <div className="px-5 space-y-4 pb-6">
           {/* Name + Favorite or Edit Name */}
           {editing ? (
-            <div>
-              <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
-                Nama Kucing <span className="text-danger">*</span>
-              </label>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Nama kucing"
-                className="w-full px-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary placeholder:text-muted focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors"
-                maxLength={50}
-                autoFocus
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
+                  Nama Kucing <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nama kucing"
+                  className="w-full px-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary placeholder:text-muted focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors"
+                  maxLength={50}
+                  autoFocus
+                />
+              </div>
+
+              {/* Color picker (edit mode) */}
+              <div>
+                <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">Warna</label>
+                <div className="flex gap-2 flex-wrap">
+                  {editColors.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setEditColor(editColor === c.id ? '' : c.id)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all
+                        ${editColor === c.id
+                          ? 'bg-primary text-on-dark ring-2 ring-primary'
+                          : 'bg-surface text-slate border border-hairline hover:border-hairline-strong'
+                        }`}
+                    >
+                      <span className={`w-3 h-3 rounded-full ${c.dot}`} />
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Species dropdown (edit mode) */}
+              <div>
+                <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">Ras / Spesies</label>
+                <select
+                  value={editSpecies}
+                  onChange={(e) => setEditSpecies(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors bg-white appearance-none"
+                >
+                  <option value="">Pilih ras (opsional)</option>
+                  <option disabled>──────────</option>
+                  {catdex.map(entry => (
+                    <option key={entry.id} value={entry.id}>{entry.name}</option>
+                  ))}
+                  <option disabled>──────────</option>
+                  <option value="">Lainnya</option>
+                </select>
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-between">
@@ -229,6 +309,22 @@ function DetailView({ cat, onClose, onShare }) {
               <span className={`text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full text-on-dark ${frameBadges[cat.frame] || frameBadges.classic}`}>
                 {frameNames[cat.frame] || cat.frame}
               </span>
+            </div>
+          )}
+
+          {/* Color & Species badges (view mode) */}
+          {!editing && (cat.color || cat.species) && (
+            <div className="flex items-center gap-2">
+              {cat.color && (
+                <span className={`text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full text-on-dark ${colorStyles[cat.color] || 'bg-slate'}`}>
+                  {colorLabels[cat.color] || cat.color}
+                </span>
+              )}
+              {speciesName && (
+                <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-surface text-slate border border-hairline">
+                  {speciesName}
+                </span>
+              )}
             </div>
           )}
 

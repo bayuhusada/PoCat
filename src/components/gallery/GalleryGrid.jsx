@@ -22,9 +22,10 @@ function GalleryGrid({ cats, onCatTap }) {
 
     if (activeFilter !== 'All') {
       const color = activeFilter.toLowerCase()
-      result = result.filter(c =>
-        c.name.toLowerCase().includes(color)
-      )
+      result = result.filter(c => {
+        if (c.color) return c.color === color
+        return c.name.toLowerCase().includes(color)
+      })
     }
 
     return result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))

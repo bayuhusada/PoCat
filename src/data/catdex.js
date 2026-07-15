@@ -34,15 +34,21 @@ export function matchCatToDex(catName) {
 export function getCatDexEntries(cats) {
   const foundIds = new Set()
   cats.forEach(cat => {
-    const match = matchCatToDex(cat.name)
-    if (match) foundIds.add(match)
-    else foundIds.add(0) // "Unknown" slot
+    if (cat.species) {
+      foundIds.add(cat.species)
+    } else {
+      const match = matchCatToDex(cat.name)
+      if (match) foundIds.add(match)
+    }
   })
 
   return catdex.map(entry => ({
     ...entry,
     found: foundIds.has(entry.id),
-    discovered: cats.filter(c => matchCatToDex(c.name) === entry.id),
+    discovered: cats.filter(c => {
+      if (c.species) return c.species === entry.id
+      return matchCatToDex(c.name) === entry.id
+    }),
   }))
 }
 

@@ -1,9 +1,21 @@
 import { useState } from 'react'
 import BottomSheet from '../ui/BottomSheet'
+import catdex from '../../data/catdex'
+
+const colors = [
+  { id: 'orange', label: 'Orange', bg: 'bg-orange-400', ring: 'ring-orange-400' },
+  { id: 'white', label: 'White', bg: 'bg-white', ring: 'ring-gray-200' },
+  { id: 'black', label: 'Black', bg: 'bg-gray-900', ring: 'ring-gray-900' },
+  { id: 'grey', label: 'Grey', bg: 'bg-gray-400', ring: 'ring-gray-400' },
+  { id: 'brown', label: 'Brown', bg: 'bg-amber-800', ring: 'ring-amber-800' },
+  { id: 'mixed', label: 'Mixed', bg: 'bg-gradient-to-br from-orange-400 via-gray-900 to-white', ring: 'ring-gray-500' },
+]
 
 function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, saving }) {
   const [name, setName] = useState('')
   const [story, setStory] = useState('')
+  const [color, setColor] = useState('')
+  const [species, setSpecies] = useState('')
   const [error, setError] = useState('')
 
   function handleSave() {
@@ -12,9 +24,16 @@ function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, sav
       setError('Nama kucing wajib diisi')
       return
     }
-    onSave({ name: trimmed, story: story.trim() })
+    onSave({
+      name: trimmed,
+      story: story.trim(),
+      color: color || null,
+      species: species ? Number(species) : null,
+    })
     setName('')
     setStory('')
+    setColor('')
+    setSpecies('')
     setError('')
   }
 
@@ -31,7 +50,7 @@ function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, sav
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Beri Nama" showClose={false}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
         {/* Preview kecil */}
         <div className="flex justify-center">
           <div className="w-24 h-24 rounded-2xl overflow-hidden bg-surface relative">
@@ -61,6 +80,50 @@ function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, sav
             maxLength={50}
           />
           {error && <p className="text-danger text-xs mt-1">{error}</p>}
+        </div>
+
+        {/* Color picker */}
+        <div>
+          <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
+            Warna
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {colors.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setColor(color === c.id ? '' : c.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all
+                  ${color === c.id
+                    ? 'bg-primary text-on-dark ring-2 ring-primary'
+                    : 'bg-surface text-slate border border-hairline hover:border-hairline-strong'
+                  }`}
+              >
+                <span className={`w-3 h-3 rounded-full ${c.bg} ${c.id === 'white' ? 'border border-gray-200' : ''}`} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Species dropdown */}
+        <div>
+          <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
+            Ras / Spesies
+          </label>
+          <select
+            value={species}
+            onChange={(e) => setSpecies(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors bg-white appearance-none"
+          >
+            <option value="">Pilih ras (opsional)</option>
+            <option disabled>──────────</option>
+            {catdex.map(entry => (
+              <option key={entry.id} value={entry.id}>{entry.name}</option>
+            ))}
+            <option disabled>──────────</option>
+            <option value="">Lainnya</option>
+          </select>
         </div>
 
         {/* Cerita (opsional) */}
