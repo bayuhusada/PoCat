@@ -5,11 +5,24 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+
+function createCatIcon(photoUrl) {
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="
+        width:44px;height:44px;border-radius:50%;
+        border:3px solid white;
+        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        overflow:hidden;
+        background:#e5e7eb url('${photoUrl}') center/cover no-repeat;
+      "></div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22],
+  })
+}
 
 function MapView({ cats, onClose }) {
   const mapRef = useRef(null)
@@ -43,7 +56,9 @@ function MapView({ cats, onClose }) {
     map.fitBounds(bounds, { padding: [50, 50] })
 
     catsWithLoc.forEach(cat => {
-      const marker = L.marker([cat.latitude, cat.longitude]).addTo(map)
+      const marker = L.marker([cat.latitude, cat.longitude], {
+        icon: createCatIcon(cat.photo),
+      }).addTo(map)
       marker.bindPopup(`
         <div style="min-width:160px">
           <img src="${cat.photo}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:6px" />
