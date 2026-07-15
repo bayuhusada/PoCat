@@ -21,12 +21,21 @@ function CameraPage() {
   const [showFramePicker, setShowFramePicker] = useState(false)
   const [showNaming, setShowNaming] = useState(false)
   const [selectedFrame, setSelectedFrame] = useState('classic')
+  const [saving, setSaving] = useState(false)
 
   const handleCapture = useCallback(() => {
     const imageSrc = camera.capture()
     if (!imageSrc) return
     geo.getCurrentPosition()
     ai.loadModelAndDetect(imageSrc)
+  }, [camera, geo, ai])
+
+  const handleFileUpload = useCallback(async (file) => {
+    const dataUrl = await camera.handleFileUpload(file)
+    if (dataUrl) {
+      geo.getCurrentPosition()
+      ai.loadModelAndDetect(dataUrl)
+    }
   }, [camera, geo, ai])
 
   const handleRetake = useCallback(() => {
@@ -43,15 +52,29 @@ function CameraPage() {
     setShowNaming(true)
   }, [])
 
-  const handleSave = useCallback(({ name, story }) => {
-    const newCat = storage.addCat({
+  const handleSave = useCallback(async ({ name, story }) => {
+    setSaving(true)
+
+    let location_name = ''
+    if (geo.location?.latitude && geo.location?.longitude) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${geo.location.latitude}&lon=${geo.location.longitude}&format=json`,
+          { headers: { 'Accept-Language': 'id' } }
+        )
+        const data = await res.json()
+        if (data.display_name) location_name = data.display_name
+      } catch {}
+    }
+
+    storage.addCat({
       name,
       story,
       photo: camera.capturedImage,
       frame: selectedFrame,
       latitude: geo.location?.latitude || null,
       longitude: geo.location?.longitude || null,
-      location_name: '',
+      location_name,
     })
 
     // Check badges
@@ -59,6 +82,7 @@ function CameraPage() {
     const newBadges = checkBadges(cats, storage.data.badges || [])
     newBadges.forEach(id => storage.addBadge(id))
 
+    setSaving(false)
     toast.success(`${name} saved! +20XP 🐱`, {
       icon: '🎉',
     })
@@ -89,7 +113,7 @@ function CameraPage() {
         onUserMediaError={camera.handleUserMediaError}
         onSwitchCamera={camera.switchCamera}
         onCapture={handleCapture}
-    onFileUpload={camera.handleFileUpload}
+    onFileUpload={handleFileUpload}
     onClose={handleClose}
     zoomLevel={camera.zoomLevel}
     onZoomChange={camera.setZoomLevel}
@@ -167,10 +191,11 @@ function CameraPage() {
       {/* Naming Sheet */}
       <NamingSheet
         isOpen={showNaming}
-        onClose={() => setShowNaming(false)}
+        onClose={() => { if (!saving) setShowNaming(false) }}
         onSave={handleSave}
         previewImage={camera.capturedImage}
         selectedFrame={selectedFrame}
+        saving={saving}
       />
     </div>
   )

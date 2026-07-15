@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import BottomSheet from '../ui/BottomSheet'
 
-function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame }) {
+function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, saving }) {
   const [name, setName] = useState('')
   const [story, setStory] = useState('')
   const [error, setError] = useState('')
@@ -81,9 +81,10 @@ function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame }) {
         {/* Save button */}
         <button
           onClick={handleSave}
-          className="w-full bg-primary text-on-dark rounded-full py-3 text-sm font-medium shadow-card active:scale-[0.98] transition-transform"
+          disabled={saving}
+          className="w-full bg-primary text-on-dark rounded-full py-3 text-sm font-medium shadow-card active:scale-[0.98] transition-transform disabled:opacity-50"
         >
-          Simpan Kucing!
+          {saving ? 'Menyimpan...' : 'Simpan Kucing!'}
         </button>
       </div>
     </BottomSheet>

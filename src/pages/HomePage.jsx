@@ -74,9 +74,9 @@ function HomePage() {
             </h1>
           </div>
           <button
-            onClick={() => user ? handleLogout() : setShowLogin(true)}
+            onClick={() => user ? navigate('/profile') : setShowLogin(true)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-surface hover:bg-hairline transition-colors"
-            title={user ? `Logout (${user.email})` : 'Login'}
+            title={user ? `Profil (${user.email})` : 'Login'}
           >
             {user ? (
               <span className="w-7 h-7 rounded-full bg-primary text-on-dark flex items-center justify-center text-xs font-bold">

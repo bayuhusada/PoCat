@@ -37,7 +37,10 @@ function CameraView({
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0]
-    if (file) onFileUpload(file)
+    if (file) {
+      await onFileUpload(file)
+      e.target.value = ''
+    }
   }
 
   const showFallbackUI = showFallback || cameraError || (!isCameraReady && loadingTimeout)

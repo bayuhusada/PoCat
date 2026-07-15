@@ -75,13 +75,15 @@ export default function useCamera() {
   }, [])
 
   const handleFileUpload = useCallback((file) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = (e) => {
         const dataUrl = e.target.result
         setCapturedImage(dataUrl)
         resolve(dataUrl)
       }
+      reader.onerror = () => reject(new Error('Gagal membaca file'))
+      reader.onabort = () => reject(new Error('Pembacaan file dibatalkan'))
       reader.readAsDataURL(file)
     })
   }, [])

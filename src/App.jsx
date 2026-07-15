@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import BottomNav from './components/layout/BottomNav'
@@ -10,6 +10,7 @@ import GalleryPage from './pages/GalleryPage'
 import CatDexPage from './pages/CatDexPage'
 import BadgesPage from './pages/BadgesPage'
 import CameraPage from './pages/CameraPage'
+import ProfilePage from './pages/ProfilePage'
 
 const pages = [
   { path: '/', Component: HomePage },
@@ -23,7 +24,7 @@ function App() {
     return localStorage.getItem('pocat_onboarding') === 'done'
   })
   const location = useLocation()
-  const isCameraPage = location.pathname === '/camera'
+  const hideNav = location.pathname === '/camera' || location.pathname === '/profile'
 
   function handleOnboardingComplete() {
     localStorage.setItem('pocat_onboarding', 'done')
@@ -51,11 +52,12 @@ function App() {
               />
             ))}
             <Route path="/camera" element={<CameraPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </AnimatePresence>
       </main>
 
-      {!isCameraPage && (
+      {!hideNav && (
         <>
           <FAB />
           <BottomNav />

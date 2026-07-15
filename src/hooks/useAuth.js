@@ -39,5 +39,21 @@ export default function useAuth() {
     if (error) throw error
   }, [])
 
-  return { session, user, loading, signIn, signUp, signOut }
+  const updateUsername = useCallback(async (username) => {
+    const { data, error } = await supabase.auth.updateUser({
+      data: { username },
+    })
+    if (error) throw error
+    return data
+  }, [])
+
+  const updatePassword = useCallback(async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+    if (error) throw error
+    return data
+  }, [])
+
+  return { session, user, loading, signIn, signUp, signOut, updateUsername, updatePassword }
 }
