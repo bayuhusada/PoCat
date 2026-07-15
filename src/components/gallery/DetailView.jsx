@@ -142,11 +142,16 @@ function DetailView({ cat, onClose, onShare }) {
     toast.success('Kucing berhasil diperbarui')
   }
 
-  function handleDelete() {
-    deleteCat(cat.id)
+  async function handleDelete() {
     if (user) {
-      deleteCatFromCloud(cat.id, user.id).catch(err => console.error('Cloud delete failed:', err))
+      try {
+        await deleteCatFromCloud(cat.id, user.id)
+      } catch (err) {
+        toast.error('Gagal menghapus dari cloud: ' + (err.message || 'Gagal'))
+        return
+      }
     }
+    deleteCat(cat.id)
     setShowDeleteConfirm(false)
     onClose()
     toast.success('Kucing berhasil dihapus')
