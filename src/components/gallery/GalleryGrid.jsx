@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react'
 import { HiSearch, HiPhotograph } from 'react-icons/hi'
+import catdex, { starsLabel, starsLevel } from '../../data/catdex'
 import CatCard from './CatCard'
 
-const filters = ['All', 'Orange', 'White', 'Black', 'Grey', 'Mixed']
+const colorFilters = ['All', 'Orange Tabby', 'Brown Tabby', 'Black', 'Tuxedo', 'White', 'Calico', 'Gray']
 
 function GalleryGrid({ cats, onCatTap }) {
   const [search, setSearch] = useState('')
-  const [activeFilter, setActiveFilter] = useState('All')
+  const [activeColor, setActiveColor] = useState('All')
+  const [starFilter, setStarFilter] = useState(0)
 
   const filtered = useMemo(() => {
     let result = [...cats]
@@ -20,16 +22,27 @@ function GalleryGrid({ cats, onCatTap }) {
       )
     }
 
-    if (activeFilter !== 'All') {
-      const color = activeFilter.toLowerCase()
-      result = result.filter(c => {
-        if (c.color) return c.color === color
-        return c.name.toLowerCase().includes(color)
-      })
+    if (activeColor !== 'All') {
+      const color = activeColor.toLowerCase().replace(/\s+/g, '_')
+      result = result.filter(c => c.color === color)
+    }
+
+    if (starFilter > 0) {
+      const speciesIds = catdex.filter(e => e.stars === starFilter).map(e => e.id)
+      result = result.filter(c => c.species && speciesIds.includes(c.species))
     }
 
     return result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  }, [cats, search, activeFilter])
+  }, [cats, search, activeColor, starFilter])
+
+  const starLevels = [
+    { value: 0, label: 'All' },
+    { value: 5, label: `${starsLabel(5)}` },
+    { value: 4, label: `${starsLabel(4)}` },
+    { value: 3, label: `${starsLabel(3)}` },
+    { value: 2, label: `${starsLabel(2)}` },
+    { value: 1, label: `${starsLabel(1)}` },
+  ]
 
   if (cats.length === 0) {
     return (
@@ -69,23 +82,46 @@ function GalleryGrid({ cats, onCatTap }) {
         </div>
       </div>
 
-      {/* Filter pills */}
-      <div className="px-4 pb-2 overflow-x-auto scrollbar-hide">
+      {/* Color filter pills */}
+      <div className="px-4 pb-1.5 overflow-x-auto scrollbar-hide">
         <div className="flex gap-2">
-          {filters.map((f) => (
+          {colorFilters.map((f) => (
             <button
               key={f}
-              onClick={() => setActiveFilter(f)}
+              onClick={() => setActiveColor(f)}
               className={`
                 text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full
                 transition-all duration-150 whitespace-nowrap
-                ${activeFilter === f
+                ${activeColor === f
                   ? 'bg-primary text-on-dark'
                   : 'bg-canvas text-slate border border-hairline hover:border-hairline-strong'
                 }
               `}
             >
               {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Star rarity filter pills */}
+      <div className="px-4 pb-2 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-1.5">
+          {starLevels.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setStarFilter(s.value)}
+              title={s.value > 0 ? starsLevel(s.value) : 'Semua'}
+              className={`
+                text-[11px] px-3 py-1.5 rounded-full whitespace-nowrap
+                transition-all duration-150
+                ${starFilter === s.value
+                  ? 'bg-primary text-on-dark'
+                  : 'bg-canvas text-slate border border-hairline hover:border-hairline-strong'
+                }
+              `}
+            >
+              {s.value === 0 ? 'All' : s.label}
             </button>
           ))}
         </div>

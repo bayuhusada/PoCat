@@ -1,4 +1,4 @@
-import { getCatDexEntries } from '../../data/catdex'
+import { getCatDexEntries, starsLabel } from '../../data/catdex'
 import { HiCollection } from 'react-icons/hi'
 
 function CatDexGrid({ cats }) {
@@ -69,6 +69,7 @@ function CatDexGrid({ cats }) {
                   <span className="text-[11px] font-semibold text-primary text-center leading-tight">
                     {entry.name}
                   </span>
+                  <span className="text-[9px] mt-0.5">{starsLabel(entry.stars)}</span>
                 </>
               ) : (
                 <>
@@ -79,6 +80,7 @@ function CatDexGrid({ cats }) {
                   <span className="text-[11px] text-steel text-center leading-tight">
                     ???
                   </span>
+                  <span className="text-[9px] mt-0.5 text-steel">{starsLabel(entry.stars)}</span>
                 </>
               )}
             </div>

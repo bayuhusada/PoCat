@@ -1,14 +1,36 @@
 import { useState } from 'react'
 import BottomSheet from '../ui/BottomSheet'
-import catdex from '../../data/catdex'
+import catdex, { starsLabel, starsLevel } from '../../data/catdex'
 
 const colors = [
-  { id: 'orange', label: 'Orange', bg: 'bg-orange-400', ring: 'ring-orange-400' },
-  { id: 'white', label: 'White', bg: 'bg-white', ring: 'ring-gray-200' },
-  { id: 'black', label: 'Black', bg: 'bg-gray-900', ring: 'ring-gray-900' },
-  { id: 'grey', label: 'Grey', bg: 'bg-gray-400', ring: 'ring-gray-400' },
-  { id: 'brown', label: 'Brown', bg: 'bg-amber-800', ring: 'ring-amber-800' },
-  { id: 'mixed', label: 'Mixed', bg: 'bg-gradient-to-br from-orange-400 via-gray-900 to-white', ring: 'ring-gray-500' },
+  { id: 'orange_tabby',     label: 'Orange Tabby',     bg: 'bg-orange-400' },
+  { id: 'brown_tabby',      label: 'Brown Tabby',      bg: 'bg-amber-800' },
+  { id: 'black',            label: 'Black',             bg: 'bg-gray-900' },
+  { id: 'tuxedo',           label: 'Tuxedo',            bg: 'bg-gradient-to-r from-gray-900 via-white to-gray-900' },
+  { id: 'white',            label: 'White',             bg: 'bg-white border border-gray-200' },
+  { id: 'calico',           label: 'Calico',            bg: 'bg-gradient-to-br from-orange-400 via-white to-gray-900' },
+  { id: 'tortoiseshell',    label: 'Tortoiseshell',     bg: 'bg-gradient-to-br from-amber-800 via-orange-400 to-gray-900' },
+  { id: 'gray',             label: 'Gray',              bg: 'bg-gray-400' },
+  { id: 'gray_white',       label: 'Gray & White',      bg: 'bg-gradient-to-r from-gray-400 to-white' },
+  { id: 'orange_white',     label: 'Orange & White',    bg: 'bg-gradient-to-r from-orange-400 to-white' },
+  { id: 'cream',            label: 'Cream',             bg: 'bg-amber-100 border border-amber-200' },
+  { id: 'chocolate',        label: 'Chocolate',         bg: 'bg-amber-900' },
+  { id: 'seal_point',       label: 'Seal Point',        bg: 'bg-gradient-to-b from-amber-800 via-white to-white' },
+  { id: 'blue_point',       label: 'Blue Point',        bg: 'bg-gradient-to-b from-gray-400 via-white to-white' },
+  { id: 'golden_shaded',    label: 'Golden Shaded',     bg: 'bg-amber-200' },
+  { id: 'silver_shaded',    label: 'Silver Shaded',     bg: 'bg-gray-200' },
+  { id: 'chinchilla_silver',label: 'Chinchilla Silver', bg: 'bg-gray-100 border border-gray-200' },
+  { id: 'blue_cream',       label: 'Blue Cream',        bg: 'bg-gradient-to-br from-gray-400 to-amber-100' },
+  { id: 'lilac',            label: 'Lilac',             bg: 'bg-purple-200' },
+  { id: 'cinnamon',         label: 'Cinnamon',          bg: 'bg-amber-600' },
+]
+
+const groups = [
+  { label: 'Sangat Langka', stars: 5 },
+  { label: 'Langka', stars: 4 },
+  { label: 'Cukup Langka', stars: 3 },
+  { label: 'Mulai Banyak', stars: 2 },
+  { label: 'Sangat Mudah', stars: 1 },
 ]
 
 function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, saving }) {
@@ -87,19 +109,19 @@ function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, sav
           <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
             Warna
           </label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {colors.map(c => (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => setColor(color === c.id ? '' : c.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all
                   ${color === c.id
                     ? 'bg-primary text-on-dark ring-2 ring-primary'
                     : 'bg-surface text-slate border border-hairline hover:border-hairline-strong'
                   }`}
               >
-                <span className={`w-3 h-3 rounded-full ${c.bg} ${c.id === 'white' ? 'border border-gray-200' : ''}`} />
+                <span className={`w-3 h-3 rounded-full ${c.bg} flex-shrink-0`} />
                 {c.label}
               </button>
             ))}
@@ -117,12 +139,17 @@ function NamingSheet({ isOpen, onClose, onSave, previewImage, selectedFrame, sav
             className="w-full px-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors bg-white appearance-none"
           >
             <option value="">Pilih ras (opsional)</option>
-            <option disabled>──────────</option>
-            {catdex.map(entry => (
-              <option key={entry.id} value={entry.id}>{entry.name}</option>
+            {groups.map(group => (
+              <optgroup key={group.stars} label={`${starsLabel(group.stars)} ${group.label}`}>
+                {catdex
+                  .filter(e => e.stars === group.stars)
+                  .map(entry => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name} — {entry.desc}
+                    </option>
+                  ))}
+              </optgroup>
             ))}
-            <option disabled>──────────</option>
-            <option value="">Lainnya</option>
           </select>
         </div>
 

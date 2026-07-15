@@ -9,7 +9,7 @@ import {
 import toast from 'react-hot-toast'
 import useCloudData from '../../hooks/useCloudData'
 import FramePicker from '../camera/FramePicker'
-import catdex from '../../data/catdex'
+import catdex, { starsLabel } from '../../data/catdex'
 import badges from '../../data/badges'
 
 const frameBadges = {
@@ -174,33 +174,85 @@ function DetailView({ cat, onClose, onShare }) {
     : null
 
   const colorStyles = {
-    orange: 'bg-orange-400',
-    white: 'bg-white border border-gray-200 text-primary',
+    orange_tabby: 'bg-orange-400',
+    brown_tabby: 'bg-amber-800',
     black: 'bg-gray-900',
-    grey: 'bg-gray-400',
-    brown: 'bg-amber-800',
-    mixed: 'bg-gradient-to-br from-orange-400 via-gray-900 to-white',
+    tuxedo: 'bg-gradient-to-r from-gray-900 via-white to-gray-900',
+    white: 'bg-white border border-gray-200 text-primary',
+    calico: 'bg-gradient-to-br from-orange-400 via-white to-gray-900',
+    tortoiseshell: 'bg-gradient-to-br from-amber-800 via-orange-400 to-gray-900',
+    gray: 'bg-gray-400',
+    gray_white: 'bg-gradient-to-r from-gray-400 to-white',
+    orange_white: 'bg-gradient-to-r from-orange-400 to-white',
+    cream: 'bg-amber-100 border border-amber-200 text-primary',
+    chocolate: 'bg-amber-900',
+    seal_point: 'bg-gradient-to-b from-amber-800 via-white to-white text-primary',
+    blue_point: 'bg-gradient-to-b from-gray-400 via-white to-white text-primary',
+    golden_shaded: 'bg-amber-200 text-primary',
+    silver_shaded: 'bg-gray-200 text-primary',
+    chinchilla_silver: 'bg-gray-100 border border-gray-200 text-primary',
+    blue_cream: 'bg-gradient-to-br from-gray-400 to-amber-100 text-primary',
+    lilac: 'bg-purple-200 text-primary',
+    cinnamon: 'bg-amber-600',
   }
 
   const colorLabels = {
-    orange: 'Orange',
-    white: 'White',
+    orange_tabby: 'Orange Tabby',
+    brown_tabby: 'Brown Tabby',
     black: 'Black',
-    grey: 'Grey',
-    brown: 'Brown',
-    mixed: 'Mixed',
+    tuxedo: 'Tuxedo',
+    white: 'White',
+    calico: 'Calico',
+    tortoiseshell: 'Tortoiseshell',
+    gray: 'Gray',
+    gray_white: 'Gray & White',
+    orange_white: 'Orange & White',
+    cream: 'Cream',
+    chocolate: 'Chocolate',
+    seal_point: 'Seal Point',
+    blue_point: 'Blue Point',
+    golden_shaded: 'Golden Shaded',
+    silver_shaded: 'Silver Shaded',
+    chinchilla_silver: 'Chinchilla Silver',
+    blue_cream: 'Blue Cream',
+    lilac: 'Lilac',
+    cinnamon: 'Cinnamon',
   }
 
   const editColors = [
-    { id: 'orange', label: 'Orange', dot: 'bg-orange-400' },
-    { id: 'white', label: 'White', dot: 'bg-white border border-gray-200' },
+    { id: 'orange_tabby', label: 'Orange Tabby', dot: 'bg-orange-400' },
+    { id: 'brown_tabby', label: 'Brown Tabby', dot: 'bg-amber-800' },
     { id: 'black', label: 'Black', dot: 'bg-gray-900' },
-    { id: 'grey', label: 'Grey', dot: 'bg-gray-400' },
-    { id: 'brown', label: 'Brown', dot: 'bg-amber-800' },
-    { id: 'mixed', label: 'Mixed', dot: 'bg-gradient-to-br from-orange-400 via-gray-900 to-white' },
+    { id: 'tuxedo', label: 'Tuxedo', dot: 'bg-gradient-to-r from-gray-900 via-white to-gray-900' },
+    { id: 'white', label: 'White', dot: 'bg-white border border-gray-200' },
+    { id: 'calico', label: 'Calico', dot: 'bg-gradient-to-br from-orange-400 via-white to-gray-900' },
+    { id: 'tortoiseshell', label: 'Tortoiseshell', dot: 'bg-gradient-to-br from-amber-800 via-orange-400 to-gray-900' },
+    { id: 'gray', label: 'Gray', dot: 'bg-gray-400' },
+    { id: 'gray_white', label: 'Gray & White', dot: 'bg-gradient-to-r from-gray-400 to-white' },
+    { id: 'orange_white', label: 'Orange & White', dot: 'bg-gradient-to-r from-orange-400 to-white' },
+    { id: 'cream', label: 'Cream', dot: 'bg-amber-100 border border-amber-200' },
+    { id: 'chocolate', label: 'Chocolate', dot: 'bg-amber-900' },
+    { id: 'seal_point', label: 'Seal Point', dot: 'bg-gradient-to-b from-amber-800 via-white to-white' },
+    { id: 'blue_point', label: 'Blue Point', dot: 'bg-gradient-to-b from-gray-400 via-white to-white' },
+    { id: 'golden_shaded', label: 'Golden Shaded', dot: 'bg-amber-200' },
+    { id: 'silver_shaded', label: 'Silver Shaded', dot: 'bg-gray-200' },
+    { id: 'chinchilla_silver', label: 'Chinchilla Silver', dot: 'bg-gray-100 border border-gray-200' },
+    { id: 'blue_cream', label: 'Blue Cream', dot: 'bg-gradient-to-br from-gray-400 to-amber-100' },
+    { id: 'lilac', label: 'Lilac', dot: 'bg-purple-200' },
+    { id: 'cinnamon', label: 'Cinnamon', dot: 'bg-amber-600' },
   ]
 
-  const speciesName = cat.species ? (catdex.find(e => e.id === cat.species)?.name || null) : null
+  const speciesEntry = cat.species ? catdex.find(e => e.id === cat.species) : null
+  const speciesName = speciesEntry?.name || null
+  const speciesStars = speciesEntry ? starsLabel(speciesEntry.stars) : null
+
+  const groups = [
+    { label: 'Sangat Langka', stars: 5 },
+    { label: 'Langka', stars: 4 },
+    { label: 'Cukup Langka', stars: 3 },
+    { label: 'Mulai Banyak', stars: 2 },
+    { label: 'Sangat Mudah', stars: 1 },
+  ]
 
   return (
     <motion.div
@@ -313,12 +365,17 @@ function DetailView({ cat, onClose, onShare }) {
                   className="w-full px-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors bg-white appearance-none"
                 >
                   <option value="">Pilih ras (opsional)</option>
-                  <option disabled>──────────</option>
-                  {catdex.map(entry => (
-                    <option key={entry.id} value={entry.id}>{entry.name}</option>
+                  {groups.map(group => (
+                    <optgroup key={group.stars} label={`${starsLabel(group.stars)} ${group.label}`}>
+                      {catdex
+                        .filter((e) => e.stars === group.stars)
+                        .map(entry => (
+                          <option key={entry.id} value={entry.id}>
+                            {entry.name} — {entry.desc}
+                          </option>
+                        ))}
+                    </optgroup>
                   ))}
-                  <option disabled>──────────</option>
-                  <option value="">Lainnya</option>
                 </select>
               </div>
             </div>
@@ -357,7 +414,7 @@ function DetailView({ cat, onClose, onShare }) {
               )}
               {speciesName && (
                 <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-surface text-slate border border-hairline">
-                  {speciesName}
+                  {speciesStars && <span className="mr-1">{speciesStars}</span>}{speciesName}
                 </span>
               )}
             </div>
