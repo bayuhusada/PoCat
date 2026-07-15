@@ -14,12 +14,7 @@ export default function useAuth() {
       .select('username')
       .eq('id', userId)
       .single()
-    if (data) {
-      setProfile(data)
-    } else {
-      await supabase.from('profiles').insert({ id: userId }).single()
-      setProfile({ username: '' })
-    }
+    setProfile(data || { username: '' })
   }
 
   useEffect(() => {
@@ -46,9 +41,16 @@ export default function useAuth() {
     return data
   }, [])
 
-  const signUp = useCallback(async (email, password) => {
+  const signUp = useCallback(async (email, password, username) => {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
+    if (data?.user && username) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, username, updated_at: new Date().toISOString() })
+      if (profileError) throw profileError
+      setProfile({ username })
+    }
     return data
   }, [])
 

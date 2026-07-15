@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { HiArrowLeft, HiMail, HiLockClosed, HiEye, HiEyeOff } from 'react-icons/hi'
+import { HiArrowLeft, HiMail, HiLockClosed, HiEye, HiEyeOff, HiUser } from 'react-icons/hi'
 import useAuth from '../hooks/useAuth'
 import toast from 'react-hot-toast'
 
@@ -9,6 +9,7 @@ function LoginPage({ onClose, onLoginSuccess }) {
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -25,7 +26,7 @@ function LoginPage({ onClose, onLoginSuccess }) {
         onLoginSuccess?.()
         onClose()
       } else {
-        await signUp(email, password)
+        await signUp(email, password, username.trim() || undefined)
         toast.success('Akun berhasil dibuat! Silakan cek email untuk verifikasi.')
         setMode('login')
       }
@@ -93,6 +94,25 @@ function LoginPage({ onClose, onLoginSuccess }) {
                 />
               </div>
             </div>
+
+            {mode === 'register' && (
+              <div>
+                <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
+                  Username (opsional)
+                </label>
+                <div className="relative">
+                  <HiUser size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-steel" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Contoh: CatLover2024"
+                    maxLength={30}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-hairline-strong text-sm text-primary placeholder:text-muted focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors"
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="text-xs font-semibold text-slate uppercase tracking-wider mb-1.5 block">
