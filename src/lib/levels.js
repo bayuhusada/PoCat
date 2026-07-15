@@ -44,13 +44,16 @@ export function checkBadges(cats = [], currentBadges = []) {
   const locations = new Set(cats.filter(c => c.latitude).map(c => `${c.latitude.toFixed(2)},${c.longitude.toFixed(2)}`))
   if (locations.size >= 5 && !currentBadges.includes('explorer')) unlocked.push('explorer')
 
-  const now = new Date()
-  const hour = now.getHours()
   const nightCats = cats.filter(c => {
     const catHour = new Date(c.created_at).getHours()
     return catHour >= 18 || catHour < 5
   })
   if (nightCats.length >= 1 && !currentBadges.includes('night_hunter')) unlocked.push('night_hunter')
+
+  const rainCats = cats.filter(c =>
+    /hujan|rain|ujan|gerimis|deras/i.test(c.story || '')
+  )
+  if (rainCats.length >= 1 && !currentBadges.includes('rain_hunter')) unlocked.push('rain_hunter')
 
   return unlocked
 }

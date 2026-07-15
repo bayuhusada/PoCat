@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { migrateLocalToCloud } from '../lib/cloud'
 
 export default function useAuth() {
   const [session, setSession] = useState(null)
@@ -25,10 +26,25 @@ export default function useAuth() {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
+      if (session?.user) {
+        loadProfile(session.user.id)
+        if (event === 'SIGNED_IN') {
+          const stored = localStorage.getItem('pocat_data')
+          if (stored) {
+            try {
+              const { cats } = JSON.parse(stored)
+              if (cats?.length > 0) {
+                migrateLocalToCloud(session.user.id, cats).then(count => {
+                  if (count > 0) console.log(`Migrated ${count} cats to cloud`)
+                })
+              }
+            } catch {}
+          }
+        }
+      }
       setLoading(false)
     })
 

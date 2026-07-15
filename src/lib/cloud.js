@@ -9,17 +9,41 @@ function base64ToBlob(base64DataUrl) {
   return new Blob([array], { type: mime })
 }
 
+export function compressImage(base64DataUrl, maxWidth = 1200, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      let w = img.width
+      let h = img.height
+      if (w > maxWidth) {
+        h = (h / w) * maxWidth
+        w = maxWidth
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = () => reject(new Error('Gagal memuat gambar'))
+    img.src = base64DataUrl
+  })
+}
+
 export async function uploadPhoto(userId, catId, base64DataUrl) {
-  const blob = base64ToBlob(base64DataUrl)
+  const compressed = await compressImage(base64DataUrl)
+  const blob = base64ToBlob(compressed)
   const filePath = `${userId}/${catId}.jpg`
   const { error } = await supabase.storage
     .from('cat-photos')
     .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
   if (error) throw error
-  const { data: { publicUrl } } = supabase.storage
+  const { data: { signedUrl }, error: signedError } = await supabase.storage
     .from('cat-photos')
-    .getPublicUrl(filePath)
-  return publicUrl
+    .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10)
+  if (signedError) throw signedError
+  return signedUrl
 }
 
 export async function saveCatToCloud(cat) {
@@ -63,4 +87,33 @@ export async function deleteCatFromCloud(catId, userId) {
     .from('cat-photos')
     .remove([filePath])
   if (storageError) throw storageError
+}
+
+export async function fetchUserCats(userId) {
+  const { data, error } = await supabase
+    .from('cats')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function migrateLocalToCloud(userId, localCats) {
+  if (!localCats || localCats.length === 0) return 0
+  let count = 0
+  for (const cat of localCats) {
+    try {
+      const photoUrl = await uploadPhoto(userId, cat.id, cat.photo)
+      await saveCatToCloud({
+        ...cat,
+        photo: photoUrl,
+        user_id: userId,
+      })
+      count++
+    } catch (err) {
+      console.error('Migration failed for cat', cat.id, err)
+    }
+  }
+  return count
 }

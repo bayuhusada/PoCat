@@ -80,17 +80,23 @@ function ProfilePage() {
       setConfirmPassword('')
       setChangingPassword(false)
     } catch (err) {
-      toast.error(err.message)
+      const msg = err.message?.toLowerCase() || ''
+      if (msg.includes('session') || msg.includes('login') || msg.includes('auth') || msg.includes('token')) {
+        toast.error('Sesi berakhir, silakan login ulang untuk mengganti password')
+      } else {
+        toast.error(err.message)
+      }
     } finally {
       setSubmitting(false)
     }
   }
 
   async function handleLogout() {
-    await signOut()
+    try {
+      await signOut()
+    } catch {}
     toast.success('Berhasil keluar')
     navigate('/')
-    window.location.reload()
   }
 
   if (!user) {

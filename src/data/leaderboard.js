@@ -1,9 +1,3 @@
-export function getLeaderboard(userCats) {
-  return [{
-    name: 'Kamu',
-    totalCats: userCats,
-    avatar: null,
-    isUser: true,
-    rank: 1,
-  }]
-}
+// Leaderboard data is now fetched from Supabase in HomePage
+// This file kept for potential future offline mode
+export const LEADERBOARD_VERSION = 2

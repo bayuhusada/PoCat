@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import useLocalStorage from '../../hooks/useLocalStorage'
 import useAuth from '../../hooks/useAuth'
 import { updateCatInCloud, deleteCatFromCloud } from '../../lib/cloud'
+import { checkBadges } from '../../lib/levels'
 import FramePicker from '../camera/FramePicker'
 import catdex from '../../data/catdex'
 
@@ -46,7 +47,7 @@ const frameOverlays = {
 }
 
 function DetailView({ cat, onClose, onShare }) {
-  const { updateCat, deleteCat } = useLocalStorage()
+  const { updateCat, deleteCat, addBadge } = useLocalStorage()
   const { user } = useAuth()
 
   const [editing, setEditing] = useState(false)
@@ -131,6 +132,11 @@ function DetailView({ cat, onClose, onShare }) {
         species: editSpecies ? Number(editSpecies) : null,
       }).catch(err => console.error('Cloud update failed:', err))
     }
+
+    const allCats = JSON.parse(localStorage.getItem('pocat_data') || '{}').cats || []
+    const currentBadges = JSON.parse(localStorage.getItem('pocat_data') || '{}').badges || []
+    const newBadges = checkBadges(allCats, currentBadges)
+    newBadges.forEach(id => addBadge(id))
 
     setEditing(false)
     toast.success('Kucing berhasil diperbarui')

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import useCamera from '../hooks/useCamera'
@@ -21,6 +21,7 @@ function CameraPage() {
   const storage = useLocalStorage()
   const { user } = useAuth()
 
+  const lastGeocodeRef = useRef(0)
   const [showFramePicker, setShowFramePicker] = useState(false)
   const [showNaming, setShowNaming] = useState(false)
   const [selectedFrame, setSelectedFrame] = useState('classic')
@@ -59,7 +60,9 @@ function CameraPage() {
     setSaving(true)
 
     let location_name = ''
-    if (geo.location?.latitude && geo.location?.longitude) {
+    const now = Date.now()
+    if (geo.location?.latitude && geo.location?.longitude && now - lastGeocodeRef.current > 1500) {
+      lastGeocodeRef.current = now
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${geo.location.latitude}&lon=${geo.location.longitude}&format=json`,

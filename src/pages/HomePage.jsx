@@ -14,11 +14,12 @@ import toast from 'react-hot-toast'
 
 function HomePage() {
   const navigate = useNavigate()
-  const { data, addBadge } = useLocalStorage()
+  const { data, addBadge, setData } = useLocalStorage()
   const { user, signOut } = useAuth()
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
   const [cloudCats, setCloudCats] = useState(null)
+  const [leaderboard, setLeaderboard] = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -32,6 +33,34 @@ function HomePage() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!user) { setLeaderboard(null); return }
+    supabase
+      .from('cats')
+      .select('user_id')
+      .then(({ data: catsData }) => {
+        if (!catsData?.length) { setLeaderboard([]); return }
+        const counts = {}
+        catsData.forEach(c => { counts[c.user_id] = (counts[c.user_id] || 0) + 1 })
+        const userIds = Object.keys(counts)
+        return supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds)
+          .then(({ data: profiles }) => {
+            const lb = (profiles || []).map(p => ({
+              name: p.username || 'Player',
+              totalCats: counts[p.id] || 0,
+              isUser: p.id === user.id,
+            }))
+            lb.sort((a, b) => b.totalCats - a.totalCats)
+            lb.forEach((e, i) => { e.rank = i + 1 })
+            setLeaderboard(lb)
+          })
+      })
+      .catch(() => setLeaderboard([]))
+  }, [user])
+
   const cats = data.cats || []
   const earnedBadges = data.badges || []
   const completedMissions = data.completedMissions || []
@@ -43,23 +72,24 @@ function HomePage() {
   const badgeCount = earnedBadges.length
 
   async function handleLogout() {
-    await signOut()
+    try { await signOut() } catch {}
     toast.success('Berhasil keluar')
-    window.location.reload()
   }
 
   function handleMissionComplete(mission) {
     const today = new Date().toDateString()
-    const updated = {
-      ...data,
-      xp: (data.xp || 0) + mission.reward,
-      completedMissions: [
-        ...(data.completedMissions || []),
-        { id: mission.id, date: today },
-      ],
-    }
-    localStorage.setItem('pocat_data', JSON.stringify(updated))
-    window.location.reload()
+    setData(prev => {
+      const next = {
+        ...prev,
+        xp: (prev.xp || 0) + mission.reward,
+        completedMissions: [
+          ...(prev.completedMissions || []),
+          { id: mission.id, date: today },
+        ],
+      }
+      try { localStorage.setItem('pocat_data', JSON.stringify(next)) } catch {}
+      return next
+    })
   }
 
   return (
@@ -201,6 +231,7 @@ function HomePage() {
           <LeaderboardView
             userCats={totalCats}
             cloudCats={cloudCats}
+            entries={leaderboard}
             onClose={() => setShowLeaderboard(false)}
           />
         )}

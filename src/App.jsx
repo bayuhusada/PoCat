@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
+import { HiExclamation } from 'react-icons/hi'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 import BottomNav from './components/layout/BottomNav'
 import FAB from './components/layout/FAB'
 import ViewStack from './components/layout/ViewStack'
@@ -19,12 +21,34 @@ const pages = [
   { path: '/badges', Component: BadgesPage },
 ]
 
+function NotFound() {
+  return (
+    <div className="h-full flex flex-col items-center justify-center px-6">
+      <span className="text-5xl mb-4">🐱</span>
+      <h2 className="text-xl font-bold text-primary mb-2">Halaman Tidak Ditemukan</h2>
+      <p className="text-sm text-slate text-center">Halaman yang kamu cari tidak ada. Yuk hunting kucing!</p>
+    </div>
+  )
+}
+
 function App() {
   const [onboardingDone, setOnboardingDone] = useState(() => {
     return localStorage.getItem('pocat_onboarding') === 'done'
   })
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const location = useLocation()
   const hideNav = location.pathname === '/camera' || location.pathname === '/profile'
+
+  useEffect(() => {
+    function goOnline() { setIsOnline(true) }
+    function goOffline() { setIsOnline(false) }
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+    return () => {
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
+  }, [])
 
   function handleOnboardingComplete() {
     localStorage.setItem('pocat_onboarding', 'done')
@@ -36,7 +60,14 @@ function App() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="flex flex-col h-full bg-canvas">
+      {!isOnline && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-danger text-on-dark text-xs font-medium safe-top">
+          <HiExclamation size={16} />
+          Kamu sedang offline — beberapa fitur tidak tersedia
+        </div>
+      )}
       <main className="flex-1 overflow-hidden relative safe-top">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
@@ -53,6 +84,7 @@ function App() {
             ))}
             <Route path="/camera" element={<CameraPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>
       </main>
@@ -64,6 +96,7 @@ function App() {
         </>
       )}
     </div>
+    </ErrorBoundary>
   )
 }
 
