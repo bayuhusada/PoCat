@@ -9,6 +9,7 @@ import CameraView from '../components/camera/CameraView'
 import AIDetection from '../components/camera/AIDetection'
 import FramePicker from '../components/camera/FramePicker'
 import NamingSheet from '../components/camera/NamingSheet'
+import badges from '../data/badges'
 
 function CameraPage() {
   const navigate = useNavigate()
@@ -70,7 +71,7 @@ function CameraPage() {
     }
 
     try {
-      await addCat({
+      const result = await addCat({
         name,
         story,
         photo: camera.capturedImage,
@@ -83,8 +84,33 @@ function CameraPage() {
       })
 
       setShowNaming(false)
-      toast.success(`${name} saved! +20XP 🐱`, { icon: '🎉' })
-      setTimeout(() => navigate('/gallery'), 500)
+
+      const newBadges = result?.newBadges || []
+      if (newBadges.length > 0) {
+        newBadges.forEach(badgeId => {
+          const badge = badges.find(b => b.id === badgeId)
+          if (!badge) return
+          toast.custom((t) => (
+            <div className="flex items-center gap-3 bg-primary text-on-dark rounded-2xl px-4 py-3 shadow-elevated min-w-[280px]">
+              <span className="text-2xl">{badge.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Badge Terbuka! +50XP</p>
+                <p className="text-xs text-on-dark-muted">{badge.title}</p>
+              </div>
+              <button
+                onClick={() => { toast.dismiss(t.id); navigate('/badges') }}
+                className="px-3 py-1.5 rounded-full bg-brand-yellow text-primary text-xs font-semibold whitespace-nowrap"
+              >
+                Lihat
+              </button>
+            </div>
+          ), { duration: 6000 })
+        })
+      } else {
+        toast.success(`${name} saved! +20XP 🐱`, { icon: '🎉' })
+      }
+
+      setTimeout(() => navigate('/gallery'), newBadges.length > 0 ? 3000 : 500)
     } catch (err) {
       toast.error('Gagal menyimpan: ' + (err.message || 'Gagal'))
     } finally {

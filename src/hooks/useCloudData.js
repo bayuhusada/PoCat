@@ -59,14 +59,14 @@ export default function useCloudData() {
     setCats(prev => [newCat, ...prev])
 
     const allCats = [newCat, ...catsRef.current]
-    const newBadges = checkBadges(allCats, badgesRef.current)
-    for (const id of newBadges) {
+    const unlockedBadges = checkBadges(allCats, badgesRef.current)
+    for (const id of unlockedBadges) {
       try {
         await unlockBadge(user.id, id)
         setBadges(prev => prev.includes(id) ? prev : [...prev, id])
       } catch {}
     }
-    return newCat
+    return { cat: newCat, newBadges: unlockedBadges }
   }, [user])
 
   const updateCat = useCallback(async (catId, updates) => {
@@ -75,13 +75,14 @@ export default function useCloudData() {
     setCats(prev => prev.map(c => c.id === catId ? { ...c, ...updates } : c))
 
     const allCats = catsRef.current.map(c => c.id === catId ? { ...c, ...updates } : c)
-    const newBadges = checkBadges(allCats, badgesRef.current)
-    for (const id of newBadges) {
+    const unlockedBadges = checkBadges(allCats, badgesRef.current)
+    for (const id of unlockedBadges) {
       try {
         await unlockBadge(user.id, id)
         setBadges(prev => prev.includes(id) ? prev : [...prev, id])
       } catch {}
     }
+    return { newBadges: unlockedBadges }
   }, [user])
 
   const deleteCat = useCallback(async (catId) => {

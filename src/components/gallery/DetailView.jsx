@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
   HiArrowLeft, HiHeart, HiOutlineHeart, HiShare,
   HiLocationMarker, HiClock, HiCalendar, HiPencil,
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast'
 import useCloudData from '../../hooks/useCloudData'
 import FramePicker from '../camera/FramePicker'
 import catdex from '../../data/catdex'
+import badges from '../../data/badges'
 
 const frameBadges = {
   classic: 'bg-primary',
@@ -44,6 +46,7 @@ const frameOverlays = {
 }
 
 function DetailView({ cat, onClose, onShare }) {
+  const navigate = useNavigate()
   const { updateCat, deleteCat } = useCloudData()
 
   const [editing, setEditing] = useState(false)
@@ -119,9 +122,32 @@ function DetailView({ cat, onClose, onShare }) {
       frame: editFrame,
       color: editColor || null,
       species: editSpecies ? Number(editSpecies) : null,
-    }).then(() => {
+    }).then(result => {
       setEditing(false)
-      toast.success('Kucing berhasil diperbarui')
+      const newBadges = result?.newBadges || []
+      if (newBadges.length > 0) {
+        newBadges.forEach(badgeId => {
+          const badge = badges.find(b => b.id === badgeId)
+          if (!badge) return
+          toast.custom((t) => (
+            <div className="flex items-center gap-3 bg-primary text-on-dark rounded-2xl px-4 py-3 shadow-elevated min-w-[280px]">
+              <span className="text-2xl">{badge.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Badge Terbuka! +50XP</p>
+                <p className="text-xs text-on-dark-muted">{badge.title}</p>
+              </div>
+              <button
+                onClick={() => { toast.dismiss(t.id); navigate('/badges') }}
+                className="px-3 py-1.5 rounded-full bg-brand-yellow text-primary text-xs font-semibold whitespace-nowrap"
+              >
+                Lihat
+              </button>
+            </div>
+          ), { duration: 6000 })
+        })
+      } else {
+        toast.success('Kucing berhasil diperbarui')
+      }
     }).catch(err => {
       toast.error('Gagal memperbarui: ' + (err.message || 'Gagal'))
     })
