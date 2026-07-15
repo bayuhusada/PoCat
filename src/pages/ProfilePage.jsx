@@ -10,9 +10,9 @@ import { getCatDexEntries } from '../data/catdex'
 
 function ProfilePage() {
   const navigate = useNavigate()
-  const { user, signOut, updateUsername, updatePassword } = useAuth()
+  const { user, profile, signOut, updateUsername, updatePassword } = useAuth()
   const { data } = useLocalStorage()
-  const [username, setUsername] = useState(user?.user_metadata?.username || '')
+  const [username, setUsername] = useState(profile?.username || '')
   const [editingUsername, setEditingUsername] = useState(false)
   const [usernameDraft, setUsernameDraft] = useState('')
   const [showNewPassword, setShowNewPassword] = useState(false)
@@ -23,10 +23,10 @@ function ProfilePage() {
   const [cloudCats, setCloudCats] = useState(null)
 
   useEffect(() => {
-    if (user) {
-      setUsername(user?.user_metadata?.username || '')
+    if (profile) {
+      setUsername(profile?.username || '')
     }
-  }, [user])
+  }, [profile])
 
   useEffect(() => {
     if (user) {

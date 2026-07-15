@@ -4,10 +4,12 @@ import { getLeaderboard } from '../../data/leaderboard'
 import useAuth from '../../hooks/useAuth'
 
 function LeaderboardView({ userCats, cloudCats, onClose }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const displayCats = cloudCats !== null ? Math.max(userCats, cloudCats) : userCats
   const entries = getLeaderboard(displayCats)
   const isLoggedIn = !!user
+  const displayName = profile?.username || user?.email || 'Player'
+  const displayInitial = displayName[0].toUpperCase()
 
   return (
     <motion.div
@@ -41,9 +43,9 @@ function LeaderboardView({ userCats, cloudCats, onClose }) {
             {/* User card */}
             <div className="w-full bg-primary rounded-3xl p-5 shadow-card text-center">
               <div className="w-14 h-14 rounded-full bg-brand-yellow text-primary flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                {user.email[0].toUpperCase()}
+                {displayInitial}
               </div>
-              <p className="text-on-dark font-semibold text-base">{user.email}</p>
+              <p className="text-on-dark font-semibold text-base">{displayName}</p>
               <p className="text-3xl font-bold text-brand-yellow mt-2">{displayCats}</p>
               <p className="text-on-dark-muted text-sm mt-1">kucing dikoleksi</p>
             </div>
