@@ -73,7 +73,7 @@ export default function useCloudData() {
 
   const updateCat = useCallback(async (catId, updates) => {
     if (!user) throw new Error('Login required')
-    await updateCatInCloud(catId, updates)
+    await updateCatInCloud(catId, updates, user.id)
     setCats(prev => prev.map(c => c.id === catId ? { ...c, ...updates } : c))
 
     const allCats = catsRef.current.map(c => c.id === catId ? { ...c, ...updates } : c)

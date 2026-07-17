@@ -14,7 +14,7 @@ function ViewStack({ children }) {
       animate="animate"
       exit="exit"
       transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
-      className="h-full overflow-y-auto overflow-x-hidden"
+      className="h-full overflow-y-auto overflow-x-hidden pb-[106px]"
     >
       {children}
     </motion.div>

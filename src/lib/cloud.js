@@ -67,11 +67,12 @@ export async function saveCatToCloud(cat) {
   if (error) throw error
 }
 
-export async function updateCatInCloud(catId, updates) {
+export async function updateCatInCloud(catId, updates, userId) {
   const { error } = await supabase
     .from('cats')
     .update(updates)
     .eq('id', catId)
+    .eq('user_id', userId)
   if (error) throw error
 }
 
@@ -80,6 +81,7 @@ export async function deleteCatFromCloud(catId, userId) {
     .from('cats')
     .delete()
     .eq('id', catId)
+    .eq('user_id', userId)
     .select()
   if (dbError) throw dbError
   if (!data || data.length === 0) throw new Error('Catatan tidak ditemukan atau sudah dihapus')
