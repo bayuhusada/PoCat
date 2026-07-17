@@ -6,7 +6,7 @@ import useCatDetection from '../hooks/useCatDetection'
 import useGeolocation from '../hooks/useGeolocation'
 import useCloudData from '../hooks/useCloudData'
 import CameraView from '../components/camera/CameraView'
-import AIDetection from '../components/camera/AIDetection'
+import CatchGame from '../components/camera/CatchGame'
 import FramePicker from '../components/camera/FramePicker'
 import NamingSheet from '../components/camera/NamingSheet'
 import badges from '../data/badges'
@@ -173,8 +173,8 @@ function CameraPage() {
             className="absolute inset-0 w-full h-full object-cover"
           />
 
-          {/* AI Detection overlay */}
-          <AIDetection
+          {/* Catch mini-game (replaces AI detection spinner) */}
+          <CatchGame
             isDetecting={ai.isDetecting}
             result={ai.result}
             modelLoading={ai.modelLoading}
