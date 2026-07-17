@@ -79,7 +79,7 @@ function MapView({ cats, onClose }) {
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className="absolute inset-0 z-40 bg-canvas flex flex-col"
     >
-      <div className="flex items-center px-4 safe-top" style={{ height: 56 }}>
+      <div className="relative z-20 flex items-center px-4 safe-top bg-canvas" style={{ height: 56 }}>
         <button
           onClick={onClose}
           className="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-surface transition-colors"
@@ -90,7 +90,7 @@ function MapView({ cats, onClose }) {
         <div className="w-10" />
       </div>
 
-      <div className="flex-1 relative">
+      <div className="flex-1 relative overflow-hidden">
         <div ref={containerRef} className="absolute inset-0" />
 
         {!hasLocation && (
