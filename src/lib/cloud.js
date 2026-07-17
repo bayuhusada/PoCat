@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { setStorageFull } from './storageQuota'
 
 function base64ToBlob(base64DataUrl) {
   const [header, base64] = base64DataUrl.split(',')
@@ -38,7 +39,16 @@ export async function uploadPhoto(userId, catId, base64DataUrl) {
   const { error } = await supabase.storage
     .from('cat-photos')
     .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
-  if (error) throw error
+  if (error) {
+    const msg = (error.message || error.error || '').toLowerCase()
+    if (msg.includes('quota') || msg.includes('exceeded') || msg.includes('storage limit') || msg.includes('403')) {
+      setStorageFull(true)
+      const quotaError = new Error('Penyimpanan penuh')
+      quotaError.code = 'STORAGE_FULL'
+      throw quotaError
+    }
+    throw error
+  }
   const { data: { signedUrl }, error: signedError } = await supabase.storage
     .from('cat-photos')
     .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10)

@@ -4,6 +4,8 @@ import { AnimatePresence } from 'framer-motion'
 import { HiExclamation } from 'react-icons/hi'
 import useAuth from './hooks/useAuth'
 import ErrorBoundary from './components/ui/ErrorBoundary'
+import StorageFullOverlay from './components/ui/StorageFullOverlay'
+import { isStorageFull, onStorageFullChange } from './lib/storageQuota'
 import BottomNav from './components/layout/BottomNav'
 import FAB from './components/layout/FAB'
 import ViewStack from './components/layout/ViewStack'
@@ -39,8 +41,13 @@ function App() {
     return localStorage.getItem('pocat_onboarding') === 'done'
   })
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [storageFull, setStorageFull] = useState(isStorageFull)
   const location = useLocation()
   const hideNav = location.pathname === '/camera' || location.pathname === '/profile'
+
+  useEffect(() => {
+    return onStorageFullChange(setStorageFull)
+  }, [])
 
   useEffect(() => {
     function goOnline() { setIsOnline(true) }
@@ -72,6 +79,10 @@ function App() {
 
   if (!user) {
     return <LoginPage />
+  }
+
+  if (storageFull) {
+    return <StorageFullOverlay onDismiss={() => setStorageFull(false)} />
   }
 
   return (
