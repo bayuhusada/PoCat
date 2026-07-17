@@ -39,8 +39,6 @@ function Pokeball({ size = 100 }) {
   )
 }
 
-const spring = { type: 'spring', stiffness: 400, damping: 20 }
-
 const resultVariants = {
   hidden: { opacity: 0, scale: 0.8 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
@@ -51,7 +49,7 @@ const sparklePositions = [
   { x: -60, y: 60 }, { x: 60, y: 60 }, { x: 0, y: -80 }, { x: 0, y: 80 },
 ]
 
-function ResultContent({ result, onRetry, onContinue }) {
+function ResultContent({ result, userMissed, onRetry, onContinue }) {
   if (result?.error) {
     return (
       <motion.div
@@ -79,7 +77,7 @@ function ResultContent({ result, onRetry, onContinue }) {
     )
   }
 
-  const isCaught = result?.found
+  const isCaught = result?.found && !userMissed
 
   return (
     <motion.div
@@ -129,12 +127,17 @@ function ResultContent({ result, onRetry, onContinue }) {
             animate={{ y: 40, opacity: 0, transition: { duration: 0.8, delay: 0.3 } }}
           >
             <div className="w-20 h-20 rounded-full bg-pastel-coral flex items-center justify-center">
-              <span className="text-4xl">😿</span>
+              <span className="text-4xl">
+                {userMissed ? '😴' : '😿'}
+              </span>
             </div>
           </motion.div>
           <p className="text-on-dark text-lg font-semibold">Kucingnya Kabur!</p>
           <p className="text-on-dark-muted text-sm text-center">
-            Coba cari kucing lain atau upload foto yang lebih jelas
+            {userMissed
+              ? 'Kamu tidak menangkapnya. Coba lagi!'
+              : 'Pastikan kucing terlihat jelas di foto'
+            }
           </p>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -167,35 +170,57 @@ function LoadingOverlay() {
   )
 }
 
-const shakeVariants = {
-  shake: {
-    x: [0, -12, 12, -8, 8, -4, 4, 0],
-    rotate: [0, -8, 8, -5, 5, -2, 2, 0],
-    transition: { duration: 0.7, repeat: Infinity, ease: 'easeInOut' },
-  },
+const MIN_PLAY_MS = 5000
+
+const DIFFICULTIES = ['easy', 'medium', 'hard']
+const DIFF_LABEL = { easy: 'Mudah', medium: 'Sedang', hard: 'Sulit' }
+const DIFF_COLOR = {
+  easy: 'bg-success text-white',
+  medium: 'bg-brand-yellow text-primary',
+  hard: 'bg-danger text-white',
+}
+const BOUNCE_DURATION = { easy: 1.8, medium: 1.2, hard: 0.8 }
+const SHAKE_DURATION = { easy: 1.0, medium: 0.7, hard: 0.4 }
+const TAP_TARGET = { easy: 3, medium: 6, hard: 10 }
+const SWIPE_THRESHOLD = { easy: 20, medium: 40, hard: 65 }
+
+function DifficultyBadge({ difficulty }) {
+  return (
+    <div className={`absolute top-3 right-3 z-40 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${DIFF_COLOR[difficulty]}`}>
+      {DIFF_LABEL[difficulty]}
+    </div>
+  )
 }
 
 function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
   const gameType = useRef(Math.floor(Math.random() * 3)).current
+  const difficulty = useRef(DIFFICULTIES[Math.floor(Math.random() * 3)]).current
+  const startTime = useRef(Date.now())
   const [phase, setPhase] = useState('idle')
   const [ballPhase, setBallPhase] = useState('idle')
   const [tapCount, setTapCount] = useState(0)
   const [paws, setPaws] = useState([])
   const [swipeProgress, setSwipeProgress] = useState(0)
+  const [userInteracted, setUserInteracted] = useState(false)
   const containerRef = useRef(null)
 
   const aiDone = !isDetecting && result != null
+  const tapTarget = TAP_TARGET[difficulty]
+  const swipeThreshold = SWIPE_THRESHOLD[difficulty]
+  const userMissed = phase === 'result' && !userInteracted
 
   useEffect(() => {
     if (aiDone && phase !== 'result') {
-      const delay = phase === 'playing' ? 500 : 0
-      const timer = setTimeout(() => setPhase('result'), delay)
+      const elapsed = Date.now() - startTime.current
+      const remaining = Math.max(0, MIN_PLAY_MS - elapsed)
+      const timer = setTimeout(() => setPhase('result'), remaining)
       return () => clearTimeout(timer)
     }
   }, [aiDone, phase])
 
   const handlePokeballTap = useCallback(() => {
     if (phase !== 'idle') return
+    setUserInteracted(true)
     setPhase('playing')
     setBallPhase('thrown')
     setTimeout(() => setBallPhase('shaking'), 600)
@@ -203,6 +228,7 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
 
   const handleRapidTap = useCallback(() => {
     if (phase === 'result') return
+    setUserInteracted(true)
     if (phase === 'idle') setPhase('playing')
     setTapCount(c => c + 1)
     const id = Date.now() + Math.random()
@@ -210,8 +236,9 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
     setTimeout(() => setPaws(prev => prev.filter(p => p.id !== id)), 1200)
   }, [phase])
 
-  const handlePointerDown = useCallback((e) => {
+  const handlePointerDown = useCallback(() => {
     if (phase === 'result') return
+    setUserInteracted(true)
     if (phase === 'idle') setPhase('playing')
   }, [phase])
 
@@ -226,7 +253,6 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
   }, [phase, gameType])
 
   const handlePointerUp = useCallback(() => {
-    if (gameType !== 2) return
   }, [gameType])
 
   if (modelLoading && !result) {
@@ -236,7 +262,7 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
   if (phase === 'result' && result) {
     return (
       <AnimatePresence mode="wait">
-        <ResultContent key="result" result={result} onRetry={onRetry} onContinue={onContinue} />
+        <ResultContent key="result" result={result} userMissed={userMissed} onRetry={onRetry} onContinue={onContinue} />
       </AnimatePresence>
     )
   }
@@ -251,6 +277,7 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
           exit={{ opacity: 0 }}
           className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 rounded-3xl"
         >
+          <DifficultyBadge difficulty={difficulty} />
           {ballPhase === 'idle' ? (
             <motion.button
               onClick={handlePokeballTap}
@@ -259,7 +286,7 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
             >
               <motion.div
                 animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                transition={{ duration: BOUNCE_DURATION[difficulty], repeat: Infinity, ease: 'easeInOut' }}
               >
                 <Pokeball size={96} />
               </motion.div>
@@ -271,7 +298,11 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
                 animate={
                   ballPhase === 'thrown'
                     ? { y: -50, scale: 1.2, rotate: 720, transition: { duration: 0.6, ease: 'easeOut' } }
-                    : shakeVariants.shake
+                    : {
+                        x: [0, -12, 12, -8, 8, -4, 4, 0],
+                        rotate: [0, -8, 8, -5, 5, -2, 2, 0],
+                        transition: { duration: SHAKE_DURATION[difficulty], repeat: Infinity, ease: 'easeInOut' },
+                      }
                 }
               >
                 <Pokeball size={96} />
@@ -293,6 +324,7 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
           exit={{ opacity: 0 }}
           className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 rounded-3xl px-6"
         >
+          <DifficultyBadge difficulty={difficulty} />
           <motion.button
             onClick={handleRapidTap}
             whileTap={{ scale: 0.92 }}
@@ -317,16 +349,20 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
                 ))}
               </AnimatePresence>
             </div>
-            {tapCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                key={tapCount}
-                className="text-on-dark text-3xl font-bold"
-              >{tapCount}</motion.span>
-            )}
-            <p className="text-on-dark text-base font-semibold">
-              {tapCount === 0 ? 'Tap kucingnya berkali-kali!' : 'Lagi! 🐾'}
+            <div className="flex items-center gap-2 w-full max-w-[200px]">
+              <div className="flex-1 h-2 rounded-full bg-white/20 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-brand-yellow"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, (tapCount / tapTarget) * 100)}%` }}
+                />
+              </div>
+              <span className="text-on-dark text-xs font-semibold min-w-[40px] text-right">
+                {tapCount}/{tapTarget}
+              </span>
+            </div>
+            <p className="text-on-dark text-sm font-medium">
+              {tapCount === 0 ? 'Tap kucingnya berkali-kali!' : tapCount >= tapTarget ? 'Mantap! 🎉' : 'Lagi! 🐾'}
             </p>
           </motion.button>
         </motion.div>
@@ -344,11 +380,12 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         >
+          <DifficultyBadge difficulty={difficulty} />
           <motion.div
             className="absolute bottom-0 left-0 right-0 rounded-3xl"
             style={{
               height: `${swipeProgress}%`,
-              background: swipeProgress > 50
+              background: swipeProgress >= swipeThreshold
                 ? 'linear-gradient(to top, rgba(107,203,119,0.7), rgba(107,203,119,0.2))'
                 : 'linear-gradient(to top, rgba(107,203,119,0.5), transparent)',
               transition: 'height 0.05s linear',
@@ -368,16 +405,27 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
                 <motion.span
                   className="text-5xl"
                   animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{ duration: { easy: 1.8, medium: 1.2, hard: 0.8 }[difficulty], repeat: Infinity, ease: 'easeInOut' }}
                 >🎣</motion.span>
                 <p className="text-on-dark text-base font-semibold">Geser ke atas untuk menjala!</p>
               </>
             )}
-            {swipeProgress > 0 && swipeProgress < 50 && (
-              <p className="text-on-dark-muted text-sm">Geser lagi!</p>
+            {swipeProgress > 0 && swipeProgress < swipeThreshold && (
+              <p className="text-on-dark-muted text-sm">Geser lagi! ({swipeThreshold}%)</p>
             )}
-            {swipeProgress >= 50 && (
+            {swipeProgress >= swipeThreshold && (
               <p className="text-on-dark text-sm font-medium">Mantap! 🎯</p>
+            )}
+            {swipeProgress > 0 && (
+              <div className="w-48 h-2 rounded-full bg-white/20 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-75"
+                  style={{
+                    width: `${swipeProgress}%`,
+                    background: swipeProgress >= swipeThreshold ? '#6BCB77' : '#FFD02A',
+                  }}
+                />
+              </div>
             )}
           </div>
         </motion.div>

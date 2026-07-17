@@ -39,6 +39,7 @@ export default function useCatDetection() {
       return found
     } catch (err) {
       console.error('Detection error:', err)
+      setModelLoading(false)
       setResult({ found: false, error: true, count: 0, detections: [], confidence: 0 })
       return false
     } finally {
