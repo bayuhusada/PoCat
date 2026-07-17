@@ -9,7 +9,7 @@ function base64ToBlob(base64DataUrl) {
   return new Blob([array], { type: mime })
 }
 
-export function compressImage(base64DataUrl, maxWidth = 1200, quality = 0.7) {
+export function compressImage(base64DataUrl, maxWidth = 900, quality = 0.6) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {

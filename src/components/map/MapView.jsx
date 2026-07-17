@@ -42,6 +42,8 @@ function MapView({ cats, onClose }) {
 
     mapRef.current = map
 
+    setTimeout(() => map.invalidateSize(), 400)
+
     return () => map.remove()
   }, [])
 
@@ -77,32 +79,30 @@ function MapView({ cats, onClose }) {
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="absolute inset-0 z-40 bg-canvas flex flex-col"
+      className="absolute inset-0 z-40"
     >
-      <div className="relative z-20 flex items-center px-4 safe-top bg-canvas" style={{ height: 56 }}>
+      <div ref={containerRef} className="absolute inset-0" />
+
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center px-4 safe-top" style={{ height: 56 }}>
         <button
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-surface transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-full text-on-dark bg-primary/70 hover:bg-primary active:scale-95 transition-all backdrop-blur-sm"
         >
           <HiArrowLeft size={24} />
         </button>
-        <span className="flex-1 text-center text-sm font-semibold text-primary">Map Explorer</span>
+        <span className="flex-1 text-center text-sm font-semibold text-on-dark drop-shadow-md">Map Explorer</span>
         <div className="w-10" />
       </div>
 
-      <div className="flex-1 relative overflow-hidden">
-        <div ref={containerRef} className="absolute inset-0" />
-
-        {!hasLocation && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-canvas/90 z-10">
-            <HiLocationMarker size={48} className="text-steel mb-3" />
-            <p className="text-slate text-sm text-center max-w-[220px]">
-              Belum ada kucing dengan lokasi GPS.
-              Aktifkan GPS saat memotret!
-            </p>
-          </div>
-        )}
-      </div>
+      {!hasLocation && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ background: 'rgba(255,255,255,0.92)' }}>
+          <HiLocationMarker size={48} className="text-steel mb-3" />
+          <p className="text-slate text-sm text-center max-w-[220px]">
+            Belum ada kucing dengan lokasi GPS.
+            Aktifkan GPS saat memotret!
+          </p>
+        </div>
+      )}
     </motion.div>
   )
 }
