@@ -182,7 +182,9 @@ const DIFF_COLOR = {
 const BOUNCE_DURATION = { easy: 1.8, medium: 1.2, hard: 0.8 }
 const SHAKE_DURATION = { easy: 1.0, medium: 0.7, hard: 0.4 }
 const TAP_TARGET = { easy: 3, medium: 6, hard: 10 }
-const SWIPE_THRESHOLD = { easy: 20, medium: 40, hard: 65 }
+const TIMING_ZONE_WIDTH = { easy: 40, medium: 25, hard: 15 }
+const TIMING_SPEED = { easy: 1.5, medium: 3, hard: 5 }
+const TIMING_TARGET = { easy: 1, medium: 2, hard: 3 }
 
 function DifficultyBadge({ difficulty }) {
   return (
@@ -200,13 +202,19 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
   const [ballPhase, setBallPhase] = useState('idle')
   const [tapCount, setTapCount] = useState(0)
   const [paws, setPaws] = useState([])
-  const [swipeProgress, setSwipeProgress] = useState(0)
+  const [ballPos, setBallPos] = useState(50)
+  const [timingHits, setTimingHits] = useState(0)
+  const [timingFeedback, setTimingFeedback] = useState(null)
   const [userInteracted, setUserInteracted] = useState(false)
-  const containerRef = useRef(null)
+  const ballDirRef = useRef(1)
+  const ballPosRef = useRef(50)
+  const animRef = useRef(null)
 
   const aiDone = !isDetecting && result != null
   const tapTarget = TAP_TARGET[difficulty]
-  const swipeThreshold = SWIPE_THRESHOLD[difficulty]
+  const timingTarget = TIMING_TARGET[difficulty]
+  const timingHalfZone = TIMING_ZONE_WIDTH[difficulty] / 2
+  const timingSpeed = TIMING_SPEED[difficulty]
   const userMissed = phase === 'result' && !userInteracted
 
   useEffect(() => {
@@ -226,6 +234,26 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
     setTimeout(() => setBallPhase('shaking'), 600)
   }, [phase])
 
+  useEffect(() => {
+    if (gameType !== 2 || phase !== 'playing' && phase !== 'idle') return
+    let running = true
+    const animate = () => {
+      if (!running) return
+      ballPosRef.current += ballDirRef.current * timingSpeed
+      if (ballPosRef.current >= 97) {
+        ballPosRef.current = 97
+        ballDirRef.current = -1
+      } else if (ballPosRef.current <= 3) {
+        ballPosRef.current = 3
+        ballDirRef.current = 1
+      }
+      setBallPos(ballPosRef.current)
+      animRef.current = requestAnimationFrame(animate)
+    }
+    animRef.current = requestAnimationFrame(animate)
+    return () => { running = false; cancelAnimationFrame(animRef.current) }
+  }, [gameType, phase, timingSpeed])
+
   const handleRapidTap = useCallback(() => {
     if (phase === 'result') return
     setUserInteracted(true)
@@ -236,24 +264,21 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
     setTimeout(() => setPaws(prev => prev.filter(p => p.id !== id)), 1200)
   }, [phase])
 
-  const handlePointerDown = useCallback(() => {
+  const handleTimingTap = useCallback(() => {
     if (phase === 'result') return
     setUserInteracted(true)
     if (phase === 'idle') setPhase('playing')
-  }, [phase])
-
-  const handlePointerMove = useCallback((e) => {
-    if (phase !== 'playing' || gameType !== 2) return
-    const container = containerRef.current
-    if (!container) return
-    const rect = container.getBoundingClientRect()
-    const y = e.clientY - rect.top
-    const progress = Math.max(0, Math.min(100, ((rect.height - y) / rect.height) * 100))
-    setSwipeProgress(progress)
-  }, [phase, gameType])
-
-  const handlePointerUp = useCallback(() => {
-  }, [gameType])
+    const center = 50
+    const dist = Math.abs(ballPos - center)
+    const hit = dist <= timingHalfZone
+    if (hit) {
+      setTimingHits(h => h + 1)
+      setTimingFeedback('hit')
+    } else {
+      setTimingFeedback('miss')
+    }
+    setTimeout(() => setTimingFeedback(null), 350)
+  }, [phase, ballPos, timingHalfZone])
 
   if (modelLoading && !result) {
     return <LoadingOverlay />
@@ -374,60 +399,87 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          ref={containerRef}
-          className="absolute inset-0 z-30 flex flex-col items-center justify-end bg-black/50 rounded-3xl overflow-hidden select-none"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 rounded-3xl px-6 select-none"
         >
           <DifficultyBadge difficulty={difficulty} />
-          <motion.div
-            className="absolute bottom-0 left-0 right-0 rounded-3xl"
-            style={{
-              height: `${swipeProgress}%`,
-              background: swipeProgress >= swipeThreshold
-                ? 'linear-gradient(to top, rgba(107,203,119,0.7), rgba(107,203,119,0.2))'
-                : 'linear-gradient(to top, rgba(107,203,119,0.5), transparent)',
-              transition: 'height 0.05s linear',
-            }}
-          />
-          {swipeProgress > 0 && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute text-5xl"
-              style={{ bottom: `${Math.max(swipeProgress, 10)}%` }}
-            >🎣</motion.div>
-          )}
-          <div className="mb-12 flex flex-col items-center gap-3">
-            {swipeProgress === 0 && (
-              <>
-                <motion.span
-                  className="text-5xl"
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: { easy: 1.8, medium: 1.2, hard: 0.8 }[difficulty], repeat: Infinity, ease: 'easeInOut' }}
-                >🎣</motion.span>
-                <p className="text-on-dark text-base font-semibold">Geser ke atas untuk menjala!</p>
-              </>
-            )}
-            {swipeProgress > 0 && swipeProgress < swipeThreshold && (
-              <p className="text-on-dark-muted text-sm">Geser lagi! ({swipeThreshold}%)</p>
-            )}
-            {swipeProgress >= swipeThreshold && (
-              <p className="text-on-dark text-sm font-medium">Mantap! 🎯</p>
-            )}
-            {swipeProgress > 0 && (
-              <div className="w-48 h-2 rounded-full bg-white/20 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-75"
-                  style={{
-                    width: `${swipeProgress}%`,
-                    background: swipeProgress >= swipeThreshold ? '#6BCB77' : '#FFD02A',
-                  }}
-                />
-              </div>
-            )}
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <span className="text-4xl">🎯</span>
+            <p className="text-on-dark text-base font-semibold">
+              {timingHits > 0 ? 'Lepaskan jala!' : 'Tap pas bolanya di zona merah!'}
+            </p>
           </div>
+
+          {/* Timing bar */}
+          <div className="relative w-full max-w-xs h-16">
+            <div className="absolute inset-0 rounded-full bg-white/10" />
+            {/* Target zone */}
+            <div
+              className="absolute top-0 h-full rounded-full transition-colors duration-150"
+              style={{
+                left: `${50 - timingHalfZone}%`,
+                width: `${TIMING_ZONE_WIDTH[difficulty]}%`,
+                background: timingFeedback === 'hit'
+                  ? 'rgba(107,203,119,0.6)'
+                  : timingFeedback === 'miss'
+                    ? 'rgba(255,107,107,0.6)'
+                    : 'rgba(255,107,107,0.35)',
+              }}
+            />
+            {/* Ball */}
+            <motion.div
+              className="absolute top-1/2 -translate-y-1/2 z-10"
+              style={{ left: `${ballPos}%` }}
+            >
+              <div
+                className={`w-7 h-7 rounded-full shadow-lg transition-transform duration-150 ${
+                  timingFeedback === 'hit' ? 'scale-125' : ''
+                }`}
+                style={{
+                  background: timingFeedback === 'miss'
+                    ? 'radial-gradient(circle, #FF6B6B, #CC5555)'
+                    : 'radial-gradient(circle, #FFFFFF, #DDDDDD)',
+                  border: timingFeedback === 'miss' ? '3px solid #FF6B6B' : '3px solid #999',
+                  transform: 'translateX(-50%)',
+                }}
+              />
+            </motion.div>
+          </div>
+
+          {/* Hit indicator dots */}
+          <div className="flex items-center gap-2 mt-6">
+            {Array.from({ length: timingTarget }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
+                  i < timingHits ? 'bg-success scale-110' : 'bg-white/25'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Feedback text */}
+          {timingFeedback && (
+            <motion.p
+              key={timingFeedback + timingHits}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={`mt-3 text-sm font-bold ${
+                timingFeedback === 'hit' ? 'text-success' : 'text-danger'
+              }`}
+            >
+              {timingFeedback === 'hit' ? 'Mantap! ✅' : 'Meleset! ❌'}
+            </motion.p>
+          )}
+
+          {/* Tap button */}
+          <motion.button
+            onClick={handleTimingTap}
+            whileTap={{ scale: 0.92 }}
+            className="mt-6 w-20 h-20 rounded-full bg-on-dark text-primary flex items-center justify-center shadow-card"
+          >
+            <span className="text-3xl leading-none">🎣</span>
+          </motion.button>
         </motion.div>
       )}
     </AnimatePresence>
