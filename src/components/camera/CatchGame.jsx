@@ -49,7 +49,7 @@ const sparklePositions = [
   { x: -60, y: 60 }, { x: 60, y: 60 }, { x: 0, y: -80 }, { x: 0, y: 80 },
 ]
 
-function ResultContent({ result, userMissed, onRetry, onContinue }) {
+function ResultContent({ result, userMissed, gameCompleted, onRetry, onContinue }) {
   if (result?.error) {
     return (
       <motion.div
@@ -77,7 +77,7 @@ function ResultContent({ result, userMissed, onRetry, onContinue }) {
     )
   }
 
-  const isCaught = result?.found && !userMissed
+  const isCaught = result?.found && gameCompleted
 
   return (
     <motion.div
@@ -136,7 +136,9 @@ function ResultContent({ result, userMissed, onRetry, onContinue }) {
           <p className="text-on-dark-muted text-sm text-center">
             {userMissed
               ? 'Kamu tidak menangkapnya. Coba lagi!'
-              : 'Pastikan kucing terlihat jelas di foto'
+              : !gameCompleted
+                ? 'Kurang tepat! Coba lagi.'
+                : 'Pastikan kucing terlihat jelas di foto'
             }
           </p>
           <motion.button
@@ -181,7 +183,7 @@ const DIFF_COLOR = {
 }
 const BOUNCE_DURATION = { easy: 1.8, medium: 1.2, hard: 0.8 }
 const SHAKE_DURATION = { easy: 1.0, medium: 0.7, hard: 0.4 }
-const TAP_TARGET = { easy: 3, medium: 6, hard: 10 }
+const TAP_TARGET = { easy: 20, medium: 30, hard: 50 }
 const TIMING_ZONE_WIDTH = { easy: 40, medium: 25, hard: 15 }
 const TIMING_SPEED = { easy: 1.5, medium: 3, hard: 5 }
 const TIMING_TARGET = { easy: 1, medium: 2, hard: 3 }
@@ -215,16 +217,29 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
   const timingTarget = TIMING_TARGET[difficulty]
   const timingHalfZone = TIMING_ZONE_WIDTH[difficulty] / 2
   const timingSpeed = TIMING_SPEED[difficulty]
+  const gameMinPlayMs = gameType === 1
+    ? { easy: 10000, medium: 15000, hard: 25000 }[difficulty]
+    : MIN_PLAY_MS
   const userMissed = phase === 'result' && !userInteracted
+  const gameCompleted = phase === 'result' && (
+    gameType === 0 ? userInteracted :
+    gameType === 1 ? tapCount >= tapTarget :
+    gameType === 2 ? timingHits >= timingTarget :
+    false
+  )
 
   useEffect(() => {
     if (aiDone && phase !== 'result') {
+      if (gameType === 1 && tapCount >= tapTarget) {
+        setPhase('result')
+        return
+      }
       const elapsed = Date.now() - startTime.current
-      const remaining = Math.max(0, MIN_PLAY_MS - elapsed)
+      const remaining = Math.max(0, gameMinPlayMs - elapsed)
       const timer = setTimeout(() => setPhase('result'), remaining)
       return () => clearTimeout(timer)
     }
-  }, [aiDone, phase])
+  }, [aiDone, phase, gameType, tapCount, tapTarget, gameMinPlayMs])
 
   const handlePokeballTap = useCallback(() => {
     if (phase !== 'idle') return
@@ -287,7 +302,7 @@ function CatchGame({ isDetecting, result, modelLoading, onRetry, onContinue }) {
   if (phase === 'result' && result) {
     return (
       <AnimatePresence mode="wait">
-        <ResultContent key="result" result={result} userMissed={userMissed} onRetry={onRetry} onContinue={onContinue} />
+        <ResultContent key="result" result={result} userMissed={userMissed} gameCompleted={gameCompleted} onRetry={onRetry} onContinue={onContinue} />
       </AnimatePresence>
     )
   }
